@@ -1,4 +1,5 @@
 import boto3
+import paramiko
 
 image_id = 'ami-08182c55a1c188dee'
 instance_type = 't2.micro'
@@ -13,6 +14,13 @@ def keypair_exist(name):
     key_names = list(map(lambda key: key['KeyName'], keypairs['KeyPairs']))
     return name in key_names
 
+def setup_kafka(shell):
+    """
+    Install all component of kafka on the instance and run it
+    """
+    stdin, stdout, stderr = client.exec_command("pwd")
+    print(stdout.read())
+
 def launch_kafka_instance(min_count, max_count):
     """
     Launch 'max_count' t2.micro instance(s) and wait until wait_until_running
@@ -24,6 +32,18 @@ def launch_kafka_instance(min_count, max_count):
         inst.wait_until_running()
         inst.load()
         print("Instance ", inst.id, " is running, with IP = ", inst.public_ip_address)
+
+        key = paramiko.RSAKey.from_private_key_file('/user/1/turlurem/.ssh/boto3-python.pem')
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+        # Install kafka modules on the instance.
+        try:
+            client.connect(hostname=inst.public_dns_name, username="ubuntu", pkey=key)
+            setup_kafka(client)
+            client.close()
+        except Exception as e:
+            print(e)
 
 if __name__ == '__main__':
     ec2 = boto3.client('ec2')
