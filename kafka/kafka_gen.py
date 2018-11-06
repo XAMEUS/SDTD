@@ -33,7 +33,7 @@ def launch_kafka_instance(min_count, max_count):
         inst.load()
         print("Instance ", inst.id, " is running, with IP = ", inst.public_ip_address)
 
-        key = paramiko.RSAKey.from_private_key_file('/user/1/turlurem/.ssh/boto3-python.pem')
+        key = paramiko.RSAKey.from_private_key_file('/home/maxime/.ssh/boto3-python.pem')
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 

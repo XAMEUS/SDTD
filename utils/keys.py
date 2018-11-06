@@ -2,24 +2,10 @@ import boto3
 
 from colors import colors
 
-def launch_key_setup():
-    """
-    Print choices
-    """
-    print()
-    print("-- Key manager --")
-    print("[1] Create a new key pair")
-    print("[2] List key pairs")
-    print("[3] Remove a key pair")
-    call_choice(input("Your choice ? "))
-
-def call_choice(choice_input):
+def call_choice_key(choice_input):
     """
     Call the right script depending on the user's choice
     """
-    if choice_input != "1" and choice_input != "2" and choice_input != "3":
-        launch_key_setup()
-
     if choice_input == "1":
         setup_new_key()
     elif choice_input == "2":
@@ -31,11 +17,14 @@ def keypair_exist(name):
     """
     Check if the key pair already exist (avoid duplication)
     """
+    if name == "":
+        return False
+
     ec2 = boto3.client('ec2')
     keypairs = ec2.describe_key_pairs()
 
     key_names = list(map(lambda key: key['KeyName'], keypairs['KeyPairs']))
-    return name in key_names
+    return any(name == s for s in key_names)
 
 #### KEY CREATION ####
 
@@ -70,8 +59,6 @@ def setup_new_key():
     pkey_filename = input("Enter the key save path (absolute): ")
     fingerprint = create_key(key_name, pkey_filename)
 
-    launch_key_setup()
-
 #### KEY DELETION ####
 
 def delete_key(key_name):
@@ -94,7 +81,6 @@ def setup_delete_key():
         key_name = input("Enter the key name to delete: ")
 
     delete_key(key_name)
-    launch_key_setup()
 
 #### KEY LIST ####
 
@@ -110,5 +96,3 @@ def list_keys():
     print("Existing key pairs:", colors.HEADER + str(len(keys)) + colors.ENDC)
     for k in keys:
         print("{}  {}".format(k["KeyName"], k["KeyFingerprint"]))
-
-    launch_key_setup()
