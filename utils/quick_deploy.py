@@ -37,7 +37,7 @@ def launch_kafka(key_name, pem_path):
     instances = create_instances("eu-west-3", "t2.micro", "ami-08182c55a1c188dee", 1, 1, key_name)
 
     # Arbitrary waiting time for EC2 machine to launch the SSH server
-    time.sleep(5)
+    time.sleep(10)
 
     for i in instances:
         i.create_tags(Tags=[{'Key': 'Type', 'Value': 'Kafka'}])
