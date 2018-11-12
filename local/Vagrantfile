@@ -4,14 +4,17 @@ sudo apt install -y docker.io
 sudo systemctl start docker
 sudo systemctl enable docker
 sudo curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add
-sudo echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" >> /etc/apt/sources.list.d/kubernetes.list
+sudo sh -c 'echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" >> /etc/apt/sources.list.d/kubernetes.list'
 sudo apt-get update && sudo apt-get install -y kubelet kubeadm kubectl kubernetes-cni
 sudo swapoff -a
+sudo kubeadm init
 mkdir -p $HOME/.kube
 sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
 sudo chown $(id -u):$(id -g) $HOME/.kube/config
 sudo kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml
 sudo kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/k8s-manifests/kube-flannel-rbac.yml
+sudo kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+sudo kubectl proxy
 SCRIPT
 
 $nodeScript = <<-SCRIPT
@@ -20,7 +23,7 @@ sudo apt install -y docker.io
 sudo systemctl start docker
 sudo systemctl enable docker
 sudo curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add
-sudo echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" >> /etc/apt/sources.list.d/kubernetes.list
+sudo sh -c 'echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" >> /etc/apt/sources.list.d/kubernetes.list'
 sudo apt-get update && sudo apt-get install -y kubelet kubeadm kubectl kubernetes-cni
 sudo swapoff -a
 SCRIPT
@@ -30,13 +33,14 @@ Vagrant.configure("2") do |config|
 		master.vm.box = "generic/ubuntu1810"
 		master.vm.network :private_network, ip: "192.168.0.42"
 		master.vm.hostname = "kuber-master"
-		master.vm.provision "shell", inline: $masterScript, privileged: true
+		master.vm.provision "shell", inline: $masterScript, privileged: false
+		master.vm.network "forwarded_port", guest:8001, host:8080, protocol: "tcp"
 	end
 
 	config.vm.define "kuber-node1" do |node1|
 		node1.vm.box = "generic/ubuntu1810"
 		node1.vm.network :private_network, ip: "192.168.0.43"
 		node1.vm.hostname = "kuber-node1"
-		node1.vm.provision "shell", inline: $nodeScript, privileged: true
+		node1.vm.provision "shell", inline: $nodeScript, privileged: false
 	end
 end
