@@ -1,0 +1,31 @@
+#
+# Mongo db with kubernetes
+# using replica set
+#
+
+
+# create Persistent storage + database nodes
+kubectl create -f mongo-pv.yaml
+kubectl apply -f deployent.yaml
+
+
+# Setup the primary database & the replica set
+kubectl exec -it mongo-0 mongo
+# Enter in the mongo shell
+rs.initiate()
+cfg = rs.conf()
+cfg.members[0].host = "mongo-0.mongodb-service:27017"
+rs.reconfig(cfg)
+rs.add('mongo-1.mongodb-service')
+rs.add('mongo-2.mongodb-service')
+
+
+# When all databases are connected to each other and setup, enable read on slaves
+kubectl exec mongo-1 -- mongo --eval 'rs.slaveOk()'
+kubectl exec mongo-2 -- mongo --eval 'rs.slaveOk()'
+
+
+
+# Delete all
+kubectl delete -f deployent.yaml
+kubectl delete pv mongo-pv-volume1 mongo-pv-volume2 mongo-pv-volume3
