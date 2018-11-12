@@ -1,0 +1,27 @@
+download Apache Spark from http://mirror.ibcp.fr/pub/apache/spark/spark-2.4.0/spark-2.4.0-bin-hadoop2.7.tgz
+
+
+# Spark documentation to run on kubernetes
+# https://spark.apache.org/docs/latest/running-on-kubernetes.html
+# https://kubernetes.io/blog/2018/03/apache-spark-23-with-native-kubernetes/
+
+
+cd spark-2.4.0-bin-hadoop2.7
+./bin/docker-image-tool.sh -r docker.io/theipple build
+./bin/docker-image-tool.sh -r docker.io/theipple push
+
+
+$ kubectl cluster-info
+
+Kubernetes master is running at https://192.168.99.100:8443
+CoreDNS is running at https://192.168.99.100:8443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
+
+
+$ bin/spark-submit \
+    --master k8s://https://192.168.99.100:8443 \
+    --deploy-mode cluster \
+    --name spark-pi \
+    --class org.apache.spark.examples.SparkPi \
+    --conf spark.executor.instances=2 \
+    --conf spark.kubernetes.container.image=docker.io/theipple/spark \
+    local:///opt/spark/examples/jars/spark-examples_2.11-2.4.0.jar
