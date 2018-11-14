@@ -2,6 +2,7 @@ import os
 import paramiko
 import time
 
+from colors import colors
 from instances import create_instances
 from keys import keypair_exist
 
@@ -30,14 +31,14 @@ def quick_deploy():
 def install_cmd(client, commands):
     for cmd in commands:
         sstdin, stdout, stderr = client.exec_command(cmd)
-        print(stdout.read())
+        print(stdout.read().decode("utf-8"))
 
 def launch_kafka(key_name, pem_path):
     global kafka_cmd
     instances = create_instances("eu-west-3", "t2.micro", "ami-08182c55a1c188dee", 1, 1, key_name)
 
     # Arbitrary waiting time for EC2 machine to launch the SSH server
-    time.sleep(10)
+    time.sleep(0)
 
     for i in instances:
         i.create_tags(Tags=[{'Key': 'Type', 'Value': 'Kafka'}])
@@ -46,9 +47,16 @@ def launch_kafka(key_name, pem_path):
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
         # Install kafka modules on the instance.
-        try:
-            client.connect(hostname=i.public_dns_name, username="ubuntu", pkey=key)
-            install_cmd(client, kafka_cmd)
-            client.close()
-        except Exception as e:
-            print(e)
+        c = 0
+        while c < 3:
+            print("Trying to connect to " + i.public_dns_name)
+            try:
+                client.connect(hostname=i.public_dns_name, username="ubuntu", pkey=key)
+                install_cmd(client, kafka_cmd)
+                client.close()
+                break
+            except Exception as e:
+                print(colors.FAIL + str(e) + colors.ENDC)
+                print("Retrying in a few seconds...")
+                time.sleep(10)
+                c += 1
