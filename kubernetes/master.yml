@@ -1,0 +1,43 @@
+---
+- hosts: k8s_master
+  gather_facts: no
+  tasks:
+    - name: Initialize kubectl
+      become: true
+      command: kubeadm init --pod-network-cidr=10.244.0.0/16
+
+    - name: pass bridged IPv4 traffic to iptables’ chains (This is a requirement for some CNI plugins to work)
+      become: true
+      command: sysctl net.bridge.bridge-nf-call-iptables=1
+
+
+    - name: Get $HOME
+      command: echo $HOME
+      register: HOME
+
+    - name: Create .kube folder
+      file: path="{{ HOME.stdout }}/.kube" state=directory
+
+    - name: stat .kube/config
+      stat: path="{{ HOME.stdout }}/.kube/config"
+      register: kube_config
+
+    - name: Copy /etc/kubernetes/admin.conf to $HOME/.kube/conf
+      become: true
+      command: "cp /etc/kubernetes/admin.conf {{ HOME.stdout }}/.kube/config"
+      when: not kube_config.stat.exists
+
+    - name: Get $(id -u):$(id -g)
+      command: echo $(id -u):$(id -g)
+      register: user_group
+      when: not kube_config.stat.exists
+
+    - name: Change owner of the file $HOME/.kube/
+      become: true
+      file:
+        path: "{{ HOME.stdout }}/.kube/config"
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+
+    - name: Add flannel to the cluster
+      command: kubectl apply -f https://raw.githubusercontent.com/coreos/flannel/master/Documentation/kube-flannel.yml

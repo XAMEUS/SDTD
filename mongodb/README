@@ -6,7 +6,7 @@
 
 # create Persistent storage + database nodes
 kubectl create -f mongo-pv.yaml
-kubectl apply -f deployent.yaml
+kubectl apply -f deployment.yaml
 
 
 # Setup the primary database & the replica set

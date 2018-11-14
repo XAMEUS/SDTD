@@ -1,0 +1,32 @@
+#
+# Setup kubernetes on AWS with EC2 instances using Ansible
+#
+
+
+# Step 1:
+Create multiple EC2 instances
+Make sure they can communicate between each other (Check security group: All traffic should be allowed for the group)
+
+# Step 2:
+When you had created your instances, you need to update the `host` file
+- set the IPs to the nodes
+- set the correct path to the rsa key
+
+# Step 3:
+Run the following commands to deploy the kubernetes cluster
+export ANSIBLE_HOST_KEY_CHECKING=False
+ansible-playbook -i hosts setup.yml
+ansible-playbook -i hosts master.yml
+ansible-playbook -i hosts slaves.yml
+
+
+## NOTES:
+By default master is not considered as a pod, if you want it to be one, rune the following command
+kubectl taint nodes --all node-role.kubernetes.io/master-
+
+
+
+
+# Commands to test the cluster for a replica set of mongo db (files present in the ./mongodb folder)
+kubectl apply -f https://s3.eu-west-3.amazonaws.com/sdtdk8s/mongo/mongo-pv.yaml
+kubectl apply -f https://s3.eu-west-3.amazonaws.com/sdtdk8s/mongo/deployment.yaml

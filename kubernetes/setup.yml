@@ -1,0 +1,72 @@
+---
+- hosts: kubernetes
+  gather_facts: no
+  tasks:
+    - name: Install dependencies for docker
+      become: true
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+        - apt-transport-https
+        - ca-certificates
+        - curl
+        - software-properties-common
+
+    - name: Add Docker’s official GPG key
+      become: true
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+
+    - name: get repository config
+      shell: echo deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable
+      register: repo_url
+      # prevent the command to be marked as 'changed'
+      changed_when: false
+
+    - name: Add docker repository
+      become: true
+      apt_repository:
+        repo: "{{ repo_url.stdout }}"
+        state: present
+
+    - name: Install docker-ce
+      become: true
+      apt:
+        # This specific version needs to be specified because 18.09 is not yet validated by kubeadm
+        name: docker-ce=18.06.0~ce~3-0~ubuntu
+        update_cache: yes
+
+    - name: Start and enable service docker
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+# Install kubernetes
+    - name: Add google gpg keys
+      become: true
+      apt_key:
+        url: https://packages.cloud.google.com/apt/doc/apt-key.gpg
+        state: present
+
+    - name: Add kubernetes repository
+      become: true
+      apt_repository:
+        repo: deb https://apt.kubernetes.io kubernetes-xenial main
+        state: present
+
+    - name: Install kubectl
+      become: true
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+        - kubelet
+        - kubeadm
+        - kubectl
+        - kubernetes-cni
