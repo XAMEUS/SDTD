@@ -1,0 +1,132 @@
+---
+- hosts: localhost
+  vars:
+    aws_region: eu-west-3
+    private_key_name: "ansible_key"
+    private_key_path: "./ansible_key.pem"
+    instance_type: "t2.micro"
+    instance_image: "ami-08182c55a1c188dee"
+    # Instances will only be created if all previous instances are no longer running
+    wanted_instances: 5
+  #   AWS_ACCESS_KEY: ""
+  #   AWS_SECRET_KEY: ""
+  gather_facts: no
+  connection: local
+  tasks:
+    - name: Install boto
+      become: true
+      pip:
+        name: boto
+    - name: Install boto3
+      become: true
+      pip:
+        name: boto3
+
+    - name: stat private_key
+      stat: path="{{ private_key_path }}"
+      register: private_key
+
+    - block:
+        - name: create ec2 key
+          ec2_key:
+            name: "{{ private_key_name }}"
+            region: "{{ aws_region }}"
+          environment:
+            BOTO_USE_ENDPOINT_HEURISTICS: True
+          register: result
+
+        - name: save the private key
+          copy:
+            content: "{{ result.key.private_key }}"
+            dest: "{{ private_key_path }}"
+            mode: "400"
+      when: not private_key.stat.exists
+
+    - name: Get instances
+      ec2_instance_facts:
+        filters:
+          tag:instance_type: k8s-ansible
+          instance-state-name: pending
+          instance-state-name: running
+      register: ec2_instances
+
+    # - debug: var=ec2_instances
+
+    - name: No instances found, create new one
+      block:
+      - name: Get default vpc
+        ec2_vpc_net_facts:
+          filters:
+            isDefault: "true"
+        register: default_vpc
+
+      # - debug: var=default_vpc.vpcs[0].id
+
+      - name: Get subnets
+        ec2_vpc_subnet_facts:
+          filters:
+            vpc-id: "{{ default_vpc.vpcs[0].id }}"
+        register: vpc_subnet
+
+      # - debug: var=vpc_subnet.subnets[0].id
+
+
+      - name: Setup ansible-k8s-group
+        ec2_group:
+          name: ansible-k8s-group
+          description: EC2 group for ansible setup kubernetes
+          region: "{{ aws_region }}"
+          rules:
+            - proto: tcp
+              from_port: 22
+              to_port: 22
+              cidr_ip: 10.0.0.0/8
+            - proto: all
+              group_name: ansible-k8s-group
+
+
+
+      - ec2:
+          region: "{{ aws_region }}"
+          key_name: "{{ private_key_name }}"
+          instance_type: "{{ instance_type }}"
+          image: "{{ instance_image }}"
+          group: ansible-k8s-group
+          instance_tags:
+            instance_type: k8s-ansible
+          state: present
+          wait: yes
+          count: "{{ wanted_instances }}"
+          vpc_subnet_id: "{{ vpc_subnet.subnets[0].id }}"
+          assign_public_ip: yes
+
+      when: ec2_instances.instances | length == 0
+
+    - name: Get created instances
+      ec2_instance_facts:
+        filters:
+          tag:instance_type: k8s-ansible
+          instance-state-name: pending
+          instance-state-name: running
+      register: ec2_instances
+
+    # - debug: var=ec2_instances
+    #
+    # - debug:
+    #     msg: "{{ec2_instances.instances | length}}"
+
+
+    # - name: Show instances IP
+    #   debug:
+    #     msg: "IP {{ ':' }} {{ item }}"
+    #   loop: "{{ ec2_instances.instances | map(attribute='public_ip_address') | list }}"
+    #   when: ec2_instances.instances | length > 0
+
+    - name: Generating inventory file 'host'
+      template:
+        src: hosts_template.j2
+        dest: hosts
+      vars:
+        # private_key_path: "{{ private_key_path }}"
+        masters: "{{ [ec2_instances.instances[0]] | map(attribute='public_ip_address') | list }}"
+        slaves: "{{ ec2_instances.instances[1:] | map(attribute='public_ip_address') | list }}"

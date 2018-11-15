@@ -1,0 +1,7 @@
+# private key
+ansible_key.pem
+
+# generated file
+hosts
+
+*.retry

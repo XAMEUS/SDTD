@@ -1,0 +1,21 @@
+[kubernetes:vars]
+ansible_user=ubuntu
+ansible_python_interpreter=/usr/bin/python3
+ansible_ssh_private_key_file={{ private_key_path }}
+
+
+[kubernetes:children]
+k8s_master
+k8s_slaves
+
+
+[k8s_master]
+{% for master in masters %}
+master{{ loop.index }} ansible_host={{ master }}
+{% endfor %}
+
+
+[k8s_slaves]
+{% for slave in slaves %}
+slave{{ loop.index }} ansible_host={{ slave }}
+{% endfor %}
