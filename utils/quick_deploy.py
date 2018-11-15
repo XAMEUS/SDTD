@@ -1,7 +1,9 @@
 import os
-import paramiko
+import time
+import re
 import time
 
+from subprocess import call
 from colors import colors
 from instances import create_instances
 from keys import keypair_exist
@@ -21,42 +23,45 @@ def quick_deploy():
         print("Key name doesn't exist")
         key_name = input('Enter the key name to use: ')
 
-    pem_path = input('Enter the private key path (absolute): ')
-    while not os.path.isfile(pem_path):
-        print("Invalid path : file not found")
-        pem_path = input('Enter the private key path (absolute): ')
+    # pem_path = input('Enter the private key path (absolute): ')
+    # while not os.path.isfile(pem_path):
+    #     print("Invalid path : file not found")
+    #     pem_path = input('Enter the private key path (absolute): ')
 
-    launch_kafka(key_name, pem_path)
+    launch_kubernetes(key_name)
 
-def install_cmd(client, commands):
-    for cmd in commands:
-        sstdin, stdout, stderr = client.exec_command(cmd)
-        print(stdout.read().decode("utf-8"))
-
-def launch_kafka(key_name, pem_path):
+def launch_kubernetes(key_name):
+    """
+    Launch kubernetes Instances
+    """
     global kafka_cmd
-    instances = create_instances("eu-west-3", "t2.micro", "ami-08182c55a1c188dee", 1, 1, key_name)
+    instances = create_instances("eu-west-3", "t2.micro", "ami-08182c55a1c188dee", 2, 2, key_name)
 
-    # Arbitrary waiting time for EC2 machine to launch the SSH server
-    time.sleep(0)
+    time.sleep(15)
 
-    for i in instances:
-        i.create_tags(Tags=[{'Key': 'Type', 'Value': 'Kafka'}])
-        key = paramiko.RSAKey.from_private_key_file(pem_path)
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    # Liste the ip addresses of each launched instances,
+    ip_list = list()
+    for inst in instances:
+        ip_list.append(inst.public_ip_address)
+    ip_list.sort()
 
-        # Install kafka modules on the instance.
-        c = 0
-        while c < 3:
-            print("Trying to connect to " + i.public_dns_name)
-            try:
-                client.connect(hostname=i.public_dns_name, username="ubuntu", pkey=key)
-                install_cmd(client, kafka_cmd)
-                client.close()
-                break
-            except Exception as e:
-                print(colors.FAIL + str(e) + colors.ENDC)
-                print("Retrying in a few seconds...")
-                time.sleep(10)
-                c += 1
+    # Replace master and slaves ip in hosts file
+    master_str = "\nmaster ansible_host=" + ip_list[0] + "\n"
+    slaves_str = "\n"
+    for i in range(1, 2):
+        slaves_str += "slave" + str(i) + " ansible_host=" + ip_list[i] + "\n"
+
+    with open(os.path.dirname(__file__) + "/../kubernetes/hosts", "r+") as f:
+        new_host = re.sub(r'(?<=# BEGIN_SLAVES)((.|[\n])*)(?=# END_SLAVES)', slaves_str, f.read())
+        new_host = re.sub(r'(?<=# BEGIN_MASTER)((.|[\n])*)(?=# END_MASTER)', master_str, new_host)
+        f.seek(0)
+        f.write(new_host)
+        f.truncate()
+
+    # Launch ansible
+    os.chdir(os.path.dirname(__file__) + "/../kubernetes")
+    os.environ["ANSIBLE_HOST_KEY_CHECKING"] = "False"
+
+    call(["ansible-playbook", "-i", "hosts", "setup.yml"])
+    call(["ansible-playbook", "-i", "hosts", "master.yml"])
+    call(["ansible-playbook", "-i", "hosts", "slaves.yml"])
