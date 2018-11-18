@@ -10,7 +10,7 @@
 - hosts: k8s_slaves
   gather_facts: no
   vars:
-    join_cmd: "{{ hostvars.master.join_command.stdout }}"
+    join_cmd: "{{ hostvars.master1.join_command.stdout }}"
   tasks:
     - debug: var=join_cmd
 

@@ -1,0 +1,15 @@
+---
+- hosts: k8s_master
+  gather_facts: no
+  tasks:
+    - name: Create mongodb persistent volume
+      command: kubectl apply -f https://s3.eu-west-3.amazonaws.com/sdtdk8s/mongo/mongo-pv.yaml
+
+    - name: Create mongodb cluster
+      command: kubectl apply -f https://s3.eu-west-3.amazonaws.com/sdtdk8s/mongo/deployment.yaml
+
+    - name: Create mongo config file
+      command: printf "rs.initiate()\ncfg = rs.conf()\ncfg.members[0].host = "mongo-0.mongodb-service:27017"\nrs.reconfig(cfg)\nrs.add('mongo-1.mongodb-service')\nrs.add('mongo-2.mongodb-service')\n" > mongo.cfg
+
+    - name: Setup mongo replicas set
+      command: kubectl exec -it mongo-0 mongo < mongo.cfg
