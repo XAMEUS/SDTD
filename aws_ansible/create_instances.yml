@@ -7,20 +7,12 @@
     instance_type: "t2.micro"
     instance_image: "ami-08182c55a1c188dee"
     # Instances will only be created if all previous instances are no longer running
-    wanted_instances: 5
-  #   AWS_ACCESS_KEY: ""
-  #   AWS_SECRET_KEY: ""
+    wanted_instances: 3
+  environment:
+    BOTO_USE_ENDPOINT_HEURISTICS: True
   gather_facts: no
   connection: local
   tasks:
-    - name: Install boto
-      become: true
-      pip:
-        name: boto
-    - name: Install boto3
-      become: true
-      pip:
-        name: boto3
 
     - name: stat private_key
       stat: path="{{ private_key_path }}"
@@ -31,8 +23,6 @@
           ec2_key:
             name: "{{ private_key_name }}"
             region: "{{ aws_region }}"
-          environment:
-            BOTO_USE_ENDPOINT_HEURISTICS: True
           register: result
 
         - name: save the private key
