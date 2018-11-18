@@ -3,7 +3,7 @@
   vars:
     aws_region: eu-west-3
     private_key_name: "ansible_key"
-    private_key_path: "./ansible_key.pem"
+    private_key_path: "{{ playbook_dir }}/ansible_key.pem"
     instance_type: "t2.micro"
     instance_image: "ami-08182c55a1c188dee"
     # Instances will only be created if all previous instances are no longer running
@@ -70,10 +70,12 @@
             - proto: tcp
               from_port: 22
               to_port: 22
-              cidr_ip: 10.0.0.0/8
+              cidr_ip: 0.0.0.0/0
             - proto: all
               group_name: ansible-k8s-group
-
+          rules_egress:
+            - proto: all
+              cidr_ip: 0.0.0.0/0
 
 
       - ec2:
