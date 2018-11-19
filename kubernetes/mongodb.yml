@@ -8,8 +8,25 @@
     - name: Create mongodb cluster
       command: kubectl apply -f https://s3.eu-west-3.amazonaws.com/sdtdk8s/mongo/deployment.yaml
 
-    - name: Create mongo config file
-      command: printf "rs.initiate()\ncfg = rs.conf()\ncfg.members[0].host = "mongo-0.mongodb-service:27017"\nrs.reconfig(cfg)\nrs.add('mongo-1.mongodb-service')\nrs.add('mongo-2.mongodb-service')\n" > mongo.cfg
+    - name: Get Wanted pods
+      command: sh -c "kubectl describe statefulset | grep -Po '(?<=Replicas:.{11})(.*)(?= desired)'"
+      register: WantedMongoPods
+
+    - name: Wait pods to run
+      shell: sh -c "kubectl describe statefulset | grep -Po '(?<=Pods Status:.{8})(.*)(?= Running)'"
+      register: RunningMongoPods
+      changed_when: False
+      until: RunningMongoPods.stdout == "{{ WantedMongoPods.stdout }}"
+      retries: 20
+      delay: 5
+
+    - name: Copy mongo initialization commands file
+      copy:
+          src: ./mongo_init_cmd
+          dest: /tmp/mongocfg
+          owner: ubuntu
+          group: ubuntu
+          mode: u=rw,g=r,o=r
 
     - name: Setup mongo replicas set
-      command: kubectl exec -it mongo-0 mongo < mongo.cfg
+      command: sh -c "kubectl exec -it mongo-0 mongo < /tmp/mongocfg"
