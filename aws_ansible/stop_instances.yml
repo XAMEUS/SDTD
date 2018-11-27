@@ -14,9 +14,6 @@
           tag:instance_type: k8s-ansible
           instance-state-name: pending
           instance-state-name: running
-          instance-state-name: shutting-down
-          instance-state-name: stopping
-          instance-state-name: stopped
       register: ec2_instances
 
     # - debug: var=ec2_instances
