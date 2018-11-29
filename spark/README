@@ -6,6 +6,10 @@ download Apache Spark from http://mirror.ibcp.fr/pub/apache/spark/spark-2.4.0/sp
 # https://kubernetes.io/blog/2018/03/apache-spark-23-with-native-kubernetes/
 
 
+wget http://mirror.ibcp.fr/pub/apache/spark/spark-2.4.0/spark-2.4.0-bin-hadoop2.7.tgz
+tar -xvf spark-2.4.0-bin-hadoop2.7.tgz
+sudo apt install -y openjdk-8-jdk
+
 cd spark-2.4.0-bin-hadoop2.7
 ./bin/docker-image-tool.sh -r docker.io/theipple build
 ./bin/docker-image-tool.sh -r docker.io/theipple push
@@ -17,11 +21,17 @@ Kubernetes master is running at https://192.168.99.100:8443
 CoreDNS is running at https://192.168.99.100:8443/api/v1/namespaces/kube-system/services/kube-dns:dns/proxy
 
 
+kubectl create serviceaccount spark
+kubectl create clusterrolebinding spark-role --clusterrole=edit --serviceaccount=default:spark --namespace=default
+
 $ bin/spark-submit \
-    --master k8s://https://192.168.99.100:8443 \
+    --master k8s://https://172.31.5.62:6443 \
     --deploy-mode cluster \
     --name spark-pi \
     --class org.apache.spark.examples.SparkPi \
     --conf spark.executor.instances=2 \
+    --driver-memory=1g \
+    --executor-memory=1g \
+    --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
     --conf spark.kubernetes.container.image=docker.io/theipple/spark \
     local:///opt/spark/examples/jars/spark-examples_2.11-2.4.0.jar

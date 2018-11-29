@@ -1,0 +1,41 @@
+---
+- hosts: k8s_master
+  gather_facts: no
+  tasks:
+    - name: Install dependencies for docker
+      become: true
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+        - openjdk-8-jdk
+
+    - name: Download spark
+      get_url:
+        url: http://mirror.ibcp.fr/pub/apache/spark/spark-2.4.0/spark-2.4.0-bin-hadoop2.7.tgz
+        dest: /tmp/spark-2.4.0-bin-hadoop2.7.tgz
+        mode: 440
+
+    - name: Extract spark archive into ~/spark
+      unarchive:
+        remote_src: yes
+        src: /tmp/spark-2.4.0-bin-hadoop2.7.tgz
+        dest: /home/ubuntu/
+
+    - name: Check the spark account for kubernetes
+      command: kubectl get serviceaccount spark
+      register: check_output
+      ignore_errors: yes
+      # prevent the command to be marked as 'changed'
+      changed_when: false
+      failed_when: false
+
+    - block:
+      - name: Create kubernetes account for spark
+        command: kubectl create serviceaccount spark
+
+      - name: Add permission to the spark account
+        command: kubectl create clusterrolebinding spark-role --clusterrole=edit --serviceaccount=default:spark --namespace=default
+
+      when: check_output.rc == 1
