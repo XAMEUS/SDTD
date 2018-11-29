@@ -88,11 +88,11 @@
             instance_type: k8s-ansible
           state: present
           wait: yes
-          count: "{{ wanted_instances }}"
+          count: "{{ wanted_instances - (ec2_instances.instances | length) }}"
           vpc_subnet_id: "{{ vpc_subnet.subnets[0].id }}"
           assign_public_ip: yes
 
-      when: ec2_instances.instances | length == 0
+      when: ec2_instances.instances | length < wanted_instances
 
     - name: Get created instances
       ec2_instance_facts:
