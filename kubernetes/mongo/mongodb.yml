@@ -16,7 +16,7 @@
       shell: sh -c "kubectl describe statefulset | grep -Po '(?<=Pods Status:.{8})(.*)(?= Running)'"
       register: RunningMongoPods
       changed_when: False
-      until: RunningMongoPods.stdout == "{{ WantedMongoPods.stdout }}"
+      until: RunningMongoPods.stdout == WantedMongoPods.stdout
       retries: 20
       delay: 5
 

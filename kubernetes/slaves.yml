@@ -13,8 +13,15 @@
     # TODO: Change the access to the join command if we support multiple master servers
     join_cmd: "{{ hostvars.master1.join_command.stdout }}"
   tasks:
-    - debug: var=join_cmd
+    - name: stat /etc/kubernetes/kubelet.conf
+      stat: path="/etc/kubernetes/kubelet.conf"
+      register: kubelet_conf
 
-    - name: Join the kubernetes cluster
-      become: true
-      command: "{{ join_cmd }}"
+    # Only join the cluster if the node has not already joined
+    - block:
+      - debug: var=join_cmd
+
+      - name: Join the kubernetes cluster
+        become: true
+        command: "{{ join_cmd }}"
+      when: not kubelet_conf.stat.exists
