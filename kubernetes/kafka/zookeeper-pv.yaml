@@ -1,0 +1,42 @@
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: zookeeper-pv-volume1
+  labels:
+    type: local
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/zookeeperdata1"
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: zookeeper-pv-volume2
+  labels:
+    type: local
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/zookeeperdata2"
+---
+kind: PersistentVolume
+apiVersion: v1
+metadata:
+  name: zookeeper-pv-volume3
+  labels:
+    type: local
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  hostPath:
+    path: "/mnt/zookeeperdata3"
+---

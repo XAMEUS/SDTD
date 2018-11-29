@@ -1,0 +1,47 @@
+---
+- hosts: k8s_master
+  gather_facts: no
+  tasks:
+    - name: Copy zookeeper pv
+      copy:
+          src: ./zookeeper-pv.yaml
+          dest: /tmp/zookeeper-pv.yaml
+          owner: ubuntu
+          group: ubuntu
+          mode: u=rw,g=r,o=r
+
+    - name: Create zookeeper persistent volume
+      command: kubectl apply -f /tmp/zookeeper-pv.yaml
+
+    - name: Copy zookeeper deploy
+      copy:
+          src: ./zookeeper-deploy.yaml
+          dest: /tmp/zookeeper-deploy.yaml
+          owner: ubuntu
+          group: ubuntu
+          mode: u=rw,g=r,o=r
+
+    - name: Create zookeeper cluster
+      command: kubectl apply -f /tmp/zookeeper-deploy.yaml
+
+    - name: Copy kafka pv
+      copy:
+          src: ./kafka-pv.yaml
+          dest: /tmp/kafka-pv.yaml
+          owner: ubuntu
+          group: ubuntu
+          mode: u=rw,g=r,o=r
+
+    - name: Create kafka persistent volume
+      command: kubectl apply -f /tmp/kafka-pv.yaml
+
+    - name: Copy kafka deploy
+      copy:
+          src: ./kafka-deploy.yaml
+          dest: /tmp/kafka-deploy.yaml
+          owner: ubuntu
+          group: ubuntu
+          mode: u=rw,g=r,o=r
+
+    - name: Create kafka cluster
+      command: kubectl apply -f /tmp/kafka-deploy.yaml
