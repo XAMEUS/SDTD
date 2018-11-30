@@ -11,3 +11,5 @@ ansible-playbook -i aws_ansible/hosts kubernetes/slaves.yml
 ansible-playbook -i aws_ansible/hosts kubernetes/mongo/mongodb.yml
 
 ansible-playbook -i aws_ansible/hosts spark/setup.yml
+
+ansible-playbook -i aws_ansible/hosts kubernetes/web-ui/setup.yaml

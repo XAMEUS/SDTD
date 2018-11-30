@@ -1,0 +1,50 @@
+---
+- hosts: k8s_master
+  gather_facts: no
+  tasks:
+    - name: Install the dashboard
+      command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+
+    - name: Create the dashboard role
+      command: kubectl -n kube-system describe role kubernetes-dashboard-minimal
+
+    - name: example copying file with owner and permissions
+      copy:
+        src: dashboard-admin.yml
+        dest: dashboard-admin.yml
+
+    - name: Give permissions to the dashboard
+      command: kubectl create -f dashboard-admin.yml
+
+    # - name: Start the proxy
+    #   shell: "kubectl proxy --address 0.0.0.0 --accept-hosts '.*'; disown"
+
+    - debug:
+        msg: "kubectl proxy --address 0.0.0.0 --accept-hosts '.*'"
+
+    - debug:
+        msg: "To see the webui, start a reverse proxy with 'ssh -NL 8001:127.0.0.1:8001 {{ ansuble_user }}@{{ ansible_host }}' \
+        http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/"
+
+# kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/alternative/kubernetes-dashboard.yaml
+# # run proxy
+# kubectl proxy --address 0.0.0.0 --accept-hosts '.*'
+# # see roles
+# kubectl -n kube-system describe role kubernetes-dashboard-minimal
+# # give permissions
+# kubectl create -f dashboard-admin.yml
+# # view cluster-ip
+# kubectl -n kube-system get service kubernetes-dashboard
+# ```
+#
+# Depuis son ordinateur, faire un bridge :
+# ```
+# ssh -D 9999 -C ubuntu@public_master_ip -i key.pem
+# ```
+# Ensuite configurer le proxy dans firefox
+# Hôte SOCK: 127.0.0.1, PORT: 9999
+# Se connecter à l'adresse ip du cluster.
+
+#BAD : ssh -R 9999:localhost:22 {{ ansuble_user }}@{{ ansible_host }}
+# ssh -NL 8001:localhost:8001 -i ansible_key.pem ubuntu@35.180.229.237
+# http://localhost:8001/api/v1/namespaces/kube-system/services/https:kubernetes-dashboard:/proxy/
