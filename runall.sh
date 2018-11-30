@@ -8,6 +8,6 @@ ansible-playbook -i aws_ansible/hosts kubernetes/setup.yml
 ansible-playbook -i aws_ansible/hosts kubernetes/master.yml
 ansible-playbook -i aws_ansible/hosts kubernetes/slaves.yml
 
-#ansible-playbook -i aws_ansible/hosts kubernetes/mongodb.yml
+ansible-playbook -i aws_ansible/hosts kubernetes/mongodb.yml
 
-#ansible-playbook -i aws_ansible/hosts spark/setup.yml
+ansible-playbook -i aws_ansible/hosts spark/setup.yml
