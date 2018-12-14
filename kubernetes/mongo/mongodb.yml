@@ -9,7 +9,7 @@
       command: kubectl apply -f https://s3.eu-west-3.amazonaws.com/sdtdk8s/mongo/deployment.yaml
 
     - name: Get Wanted pods
-      command: sh -c "kubectl describe statefulset | grep -Po '(?<=Replicas:.{11})(.*)(?= desired)'"
+      command: sh -c "kubectl describe statefulset | grep -Po '(?<=desired.{3})(.*)(?= total)'"
       register: WantedMongoPods
 
     - name: Wait pods to run
