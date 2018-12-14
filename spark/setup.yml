@@ -2,7 +2,7 @@
 - hosts: k8s_master
   gather_facts: no
   tasks:
-    - name: Install dependencies for docker
+    - name: Install java
       become: true
       apt:
         name: "{{ packages }}"

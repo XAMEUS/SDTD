@@ -2,25 +2,28 @@
 - hosts: k8s_master
   gather_facts: no
   tasks:
-    # - name: Install the dashboard
-    #   command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
-    #
-    # - name: Create the dashboard role
-    #   command: kubectl -n kube-system describe role kubernetes-dashboard-minimal
-    #
-    # - name: example copying file with owner and permissions
-    #   copy:
-    #     src: dashboard-admin.yml
-    #     dest: dashboard-admin.yml
-    #
-    # - name: Give permissions to the dashboard
-    #   command: kubectl create -f dashboard-admin.yml
+    - name: Install the dashboard
+      command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/master/src/deploy/recommended/kubernetes-dashboard.yaml
+
+    - name: Create the dashboard role
+      command: kubectl -n kube-system describe role kubernetes-dashboard-minimal
+
+    - name: example copying file with owner and permissions
+      copy:
+        src: dashboard-admin.yml
+        dest: dashboard-admin.yml
+
+    - name: Give permissions to the dashboard
+      command: kubectl create -f dashboard-admin.yml
 
     # - name: Start the proxy
     #   shell: "kubectl proxy --address 0.0.0.0 --accept-hosts '.*'; disown"
 
-    - debug:
-        msg: "kubectl proxy --address 0.0.0.0 --accept-hosts '.*'"
+    - name: start kubectl proxy in background
+      shell: nohup kubectl proxy --address 0.0.0.0 --accept-hosts '.*' </dev/null >/dev/null 2>&1 &
+
+    # - debug:
+    #     msg: "kubectl proxy --address 0.0.0.0 --accept-hosts '.*'"
 
     - debug:
         msg: "To see the webui, start a reverse proxy with 'ssh -NL 8001:127.0.0.1:8001 {{ ansible_user }}@{{ ansible_host }}' \

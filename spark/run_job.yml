@@ -17,5 +17,6 @@
           --conf spark.executor.instances=2 \
           --driver-memory=1g \
           --executor-memory=1g \
+          --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
           --conf spark.kubernetes.container.image=docker.io/theipple/spark \
           local:///opt/spark/examples/jars/spark-examples_2.11-2.4.0.jar"
