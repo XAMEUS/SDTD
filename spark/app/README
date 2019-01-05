@@ -1,0 +1,2 @@
+# Build the application (output on target/simple-project-1.0.jar)
+mvn package
