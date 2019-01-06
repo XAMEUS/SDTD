@@ -1,31 +1,38 @@
-/* SimpleApp.java */
-
+import com.mongodb.spark.MongoSpark;
+import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import org.apache.spark.api.java.function.Function;
 import org.apache.spark.sql.SparkSession;
-
-import java.util.List;
-
-import java.util.ArrayList;
+import org.bson.Document;
 
 
-public class SimpleApp {
+import static java.util.Arrays.asList;
 
-    private static Integer NUM_SAMPLES = 10;
+public final class SimpleApp {
 
-    public static void main(String[] args) {
-        SparkSession spark = SparkSession.builder().appName("Simple Application").getOrCreate();
-        JavaSparkContext sc = new JavaSparkContext(spark.sparkContext());
+    public static void main(final String[] args) throws InterruptedException {
 
-        List<Integer> l = new ArrayList<>(NUM_SAMPLES);
-        for (int i = 0; i < NUM_SAMPLES; i++) {
-            l.add(i);
-        }
+        SparkSession spark = SparkSession.builder()
+//                .master("local")
+                .appName("MongoSparkConnectorIntro")
+                .config("spark.mongodb.input.uri", "mongodb://mongo-0.mongodb-service/test.myCollection")
+                .config("spark.mongodb.output.uri", "mongodb://mongo-0.mongodb-service/test.myCollection")
+                .getOrCreate();
 
-        long count = sc.parallelize(l).filter(i -> {
-            double x = Math.random();
-            double y = Math.random();
-            return x * x + y * y < 1;
-        }).count();
-        System.out.println("Pi is roughly " + 4.0 * count / NUM_SAMPLES);
+        JavaSparkContext jsc = new JavaSparkContext(spark.sparkContext());
+
+        // Create a RDD of 10 documents
+        JavaRDD<Document> documents = jsc.parallelize(asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).map
+                (new Function<Integer, Document>() {
+                    public Document call(final Integer i) throws Exception {
+                        return Document.parse("{test: " + i + "}");
+                    }
+                });
+
+        /*Start Example: Save data from RDD to MongoDB*****************/
+        MongoSpark.save(documents);
+        /*End Example**************************************************/
+
+        jsc.close();
     }
 }

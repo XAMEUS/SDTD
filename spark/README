@@ -24,8 +24,9 @@ CoreDNS is running at https://192.168.99.100:8443/api/v1/namespaces/kube-system/
 kubectl create serviceaccount spark
 kubectl create clusterrolebinding spark-role --clusterrole=edit --serviceaccount=default:spark --namespace=default
 
-$ bin/spark-submit \
-    --master k8s://https://172.31.5.62:6443 \
+KUBERNETES_IP=$(kubectl cluster-info | grep master | grep -o 'http.*:[0-9]*')
+bin/spark-submit \
+    --master k8s://${KUBERNETES_IP} \
     --deploy-mode cluster \
     --name spark-pi \
     --class org.apache.spark.examples.SparkPi \

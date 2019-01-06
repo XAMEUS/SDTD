@@ -20,3 +20,5 @@
           --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
           --conf spark.kubernetes.container.image=docker.io/theipple/spark \
           local:///opt/spark/examples/jars/spark-examples_2.11-2.4.0.jar"
+
+    - debug: msg="see the result on the logs of the driver node"

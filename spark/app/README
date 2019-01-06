@@ -1,2 +1,35 @@
-# Build the application (output on target/simple-project-1.0.jar)
-mvn package
+# Build the application with its dependencies (output on target/simple-project-1.0-jar-with-dependencies.jar)
+mvn compile assembly:single
+
+
+# The jar needs to be accessible to every node executing the job -> using S33
+
+JAR_FILE=target/simple-project-1.0-jar-with-dependencies.jar
+S3_BUCKET=s3://sdtdk8s
+aws s3 cp --acl=public-read $JAR_FILE $S3_BUCKET
+
+
+
+# Note: The build & push to the S3 bucket can be done with the script `build_push_s3.sh`
+
+
+# You can execute the spark application on the kubernetes cluster with the following command
+
+KUBERNETES_IP=$(kubectl cluster-info | grep master | grep -o 'http.*:[0-9]*')
+spark-2.4.0-bin-hadoop2.7/bin/spark-submit \
+    --master k8s://${KUBERNETES_IP} \
+    --deploy-mode cluster \
+    --name spark-pi \
+    --class SimpleApp \
+    --conf spark.executor.instances=2 \
+    --driver-memory=1g \
+    --executor-memory=1g \
+    --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
+    --conf spark.kubernetes.container.image=docker.io/theipple/spark \
+    https://s3.eu-west-3.amazonaws.com/sdtdk8s/simple-project-1.0-jar-with-dependencies.jar
+
+
+
+# To check the mongo database, you can do the following commands on the maser node of the cluster
+$ kubectl exec -it mongo-0 mongo
+my_replica_set:PRIMARY> db.myCollection.find({})
