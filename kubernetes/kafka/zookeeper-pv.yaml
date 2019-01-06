@@ -1,7 +1,7 @@
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: zookeeper-pv-volume1
+  name: datadir-zk-0
   labels:
     type: local
 spec:
@@ -15,7 +15,7 @@ spec:
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: zookeeper-pv-volume2
+  name: datadir-zk-1
   labels:
     type: local
 spec:
@@ -29,7 +29,7 @@ spec:
 kind: PersistentVolume
 apiVersion: v1
 metadata:
-  name: zookeeper-pv-volume3
+  name: datadir-zk-2
   labels:
     type: local
 spec:

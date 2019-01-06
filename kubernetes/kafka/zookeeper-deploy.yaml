@@ -22,7 +22,7 @@ metadata:
 data:
   jvm.heap: "1G"
   tick: "2000"
-  init: "10"
+  init: "20"
   sync: "5"
   client.cnxns: "60"
   snap.retain: "3"
@@ -51,15 +51,15 @@ spec:
         app: zk
     spec:
       affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values:
-                    - zk
-              topologyKey: "kubernetes.io/hostname"
+        # podAntiAffinity:
+        #   requiredDuringSchedulingIgnoredDuringExecution:
+        #     - labelSelector:
+        #         matchExpressions:
+        #           - key: "app"
+        #             operator: In
+        #             values:
+        #             - zk
+        #       topologyKey: "kubernetes.io/hostname"
       containers:
       - name: k8szk
         imagePullPolicy: Always
@@ -139,8 +139,8 @@ spec:
         - name: datadir
           mountPath: /var/lib/zookeeper
       securityContext:
-        runAsUser: 1000
-        fsGroup: 1000
+        runAsUser: 0
+        fsGroup: 0
   volumeClaimTemplates:
   - metadata:
       name: datadir

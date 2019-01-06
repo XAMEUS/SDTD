@@ -24,6 +24,18 @@
     - name: Create zookeeper cluster
       command: kubectl apply -f /tmp/zookeeper-deploy.yaml
 
+    - name: Get Wanted zk pods
+      command: sh -c "kubectl describe statefulset zk | grep -Po '(?<=desired.{3})(.*)(?= total)'"
+      register: WantedZookeeperPods
+
+    - name: Wait zk pods to run
+      shell: sh -c "kubectl describe statefulset zk | grep -Po '(?<=Pods Status:.{8})(.*)(?= Running)'"
+      register: RunningZookeeperPods
+      changed_when: False
+      until: RunningZookeeperPods.stdout == WantedZookeeperPods.stdout
+      retries: 20
+      delay: 5
+
     - name: Copy kafka pv
       copy:
           src: ./kafka-pv.yaml
@@ -45,3 +57,15 @@
 
     - name: Create kafka cluster
       command: kubectl apply -f /tmp/kafka-deploy.yaml
+
+    - name: Get Wanted kafka pods
+      command: sh -c "kubectl describe statefulset kafka | grep -Po '(?<=desired.{3})(.*)(?= total)'"
+      register: WantedKafkaPods
+
+    - name: Wait kafka pods to run
+      shell: sh -c "kubectl describe statefulset kafka | grep -Po '(?<=Pods Status:.{8})(.*)(?= Running)'"
+      register: RunningKafkaPods
+      changed_when: False
+      until: RunningKafkaPods.stdout == WantedKafkaPods.stdout
+      retries: 20
+      delay: 5

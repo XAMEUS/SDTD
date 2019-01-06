@@ -36,15 +36,15 @@ spec:
         app: kafka
     spec:
       affinity:
-        podAntiAffinity:
-          requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                  - key: "app"
-                    operator: In
-                    values:
-                    - kafka
-              topologyKey: "kubernetes.io/hostname"
+        # podAntiAffinity:
+        #   requiredDuringSchedulingIgnoredDuringExecution:
+        #     - labelSelector:
+        #         matchExpressions:
+        #           - key: "app"
+        #             operator: In
+        #             values:
+        #             - kafka
+        #       topologyKey: "kubernetes.io/hostname"
         podAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
              - weight: 1
@@ -173,8 +173,8 @@ spec:
             - -c
             - "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server=localhost:9093"
       securityContext:
-        runAsUser: 1000
-        fsGroup: 1000
+        runAsUser: 0
+        fsGroup: 0
   volumeClaimTemplates:
   - metadata:
       name: datadir
