@@ -1,4 +1,6 @@
 import com.mongodb.spark.MongoSpark;
+import org.apache.kafka.clients.producer.Producer;
+import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.sql.SparkSession;
@@ -15,6 +17,8 @@ import org.apache.kafka.common.serialization.StringDeserializer;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
+import org.json.*;
 
 
 public final class SimpleApp {
@@ -46,26 +50,58 @@ public final class SimpleApp {
         kafkaParams.put("auto.offset.reset", "latest");
         kafkaParams.put("enable.auto.commit", true);
 
-        Collection<String> topics = Arrays.asList("topicA");
+
+        Collection<String> topics = Arrays.asList("topicA", "topicB");
 
         JavaInputDStream<ConsumerRecord<String, String>> stream =
                 KafkaUtils.createDirectStream(
                         streamingContext,
-//                        LocationStrategies.PreferConsistent(),
-                        LocationStrategies.PreferBrokers(),
+                        LocationStrategies.PreferConsistent(),
                         ConsumerStrategies.<String, String>Subscribe(topics, kafkaParams)
                 );
 
-        stream.foreachRDD(rdd -> {
-            System.out.println("============= STREAM RDD, partitions :" + rdd.getNumPartitions());
-            JavaRDD<String> values= rdd.map(value -> value.value());
-            List<String> valuesList = values.collect();
 
-            System.out.println(valuesList.size() + " values");
-            for (String val : valuesList) {
-                System.out.println("value : " + val);
-            }
-            JavaRDD<Document> documents = rdd.map(value -> Document.parse("{test: \"" + value.value() + "\"}"));
+
+        stream.foreachRDD(rdd -> {
+//            System.out.println("============= STREAM RDD, partitions :" + rdd.getNumPartitions());
+//            JavaRDD<String> values = rdd.map(value -> {
+//                System.out.println("============= handling message : " + value.value());
+//                return value.value();
+//            });
+//            List<String> valuesList = values.collect();
+//
+//            System.out.println(valuesList.size() + " values");
+//            for (String val : valuesList) {
+//                System.out.println("value : " + val);
+//            }
+
+            rdd.foreachPartition(partitionOfRecords -> {
+
+                while (partitionOfRecords.hasNext()) {
+                    ConsumerRecord<String, String> message = partitionOfRecords.next();
+
+                    String topic = message.topic();
+                    String value = message.value();
+
+                    Producer producer = MyKafkaProducer.getProducer();
+
+                    if (Objects.equals(topic, "topicA")) {
+                        producer.send(new ProducerRecord<>("topicB", 1, value));
+                    }
+                }
+            });
+
+
+            JavaRDD<Document> documents = rdd.map(message -> {
+                String topic = message.topic();
+                String value = message.value();
+//                JSONObject obj = new JSONObject(value);
+//                Document doc = Document.parse("{topic: \"" + topic + "\", value: \"" + value + "\"}");
+//                doc.getStr
+//                Document doc = Document.parse(obj.toString());
+//                return doc;
+                return Document.parse("{topic: \""+ topic +"\", value: \""+ value +"\"}");
+            });
             MongoSpark.save(documents);
         });
 
