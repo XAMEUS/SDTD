@@ -73,6 +73,7 @@
               cidr_ip: 0.0.0.0/0
             - proto: tcp
               from_port: 80
+              to_port: 80
               cidr_ip: 0.0.0.0/0
             - proto: all
               group_name: ansible-k8s-group
