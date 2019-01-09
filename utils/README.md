@@ -1,3 +1,10 @@
+Les identifiants de connexion à AWS peuvent se configurer dans le fichier `~/.aws/credentials`
+```
+[default]
+aws_access_key_id=KEY_ID
+aws_secret_access_key=ACCESS_KEY
+```
+
 Dans un premier il faut créer une clé pour pouvoir accéder plus tard en ssh aux instances déployées.
 
 ```

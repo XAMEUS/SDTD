@@ -19,7 +19,7 @@ KUBERNETES_IP=$(kubectl cluster-info | grep master | grep -o 'http.*:[0-9]*')
 spark-2.4.0-bin-hadoop2.7/bin/spark-submit \
     --master k8s://${KUBERNETES_IP} \
     --deploy-mode cluster \
-    --name spark-pi \
+    --name spark-kafka-mongo \
     --class SimpleApp \
     --conf spark.executor.instances=2 \
     --driver-memory=1g \
@@ -33,3 +33,20 @@ spark-2.4.0-bin-hadoop2.7/bin/spark-submit \
 # To check the mongo database, you can do the following commands on the maser node of the cluster
 $ kubectl exec -it mongo-0 mongo
 my_replica_set:PRIMARY> db.myCollection.find({})
+
+
+# Create topic on kafka
+$ kubectl exec -it kafka-0 bash
+kafka-topics.sh --create \
+--topic topicA \
+--zookeeper zk-0.zk-svc.default.svc.cluster.local:2181,zk-1.zk-svc.default.svc.cluster.local:2181,zk-2.zk-svc.default.svc.cluster.local:2181 \
+--partitions 3 \
+--replication-factor 2
+
+# To add kafka messages
+$ kubectl exec -it kafka-0 bash
+root@kafka-0:/# kafka-console-producer.sh --topic topicA --broker-list localhost:9093
+
+
+# Check queued messages on a topic
+kafka-run-class.sh  kafka.tools.GetOffsetShell --broker-list localhost:9093,kafka-1.kafka-svc:9093,kafka-2.kafka-svc:9093 --topic topicA
