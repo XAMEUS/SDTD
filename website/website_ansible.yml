@@ -1,0 +1,42 @@
+---
+- hosts: k8s_master
+  gather_facts: no
+  tasks:
+    - name: Install apache server
+      become: true
+      apt:
+        name: "{{ packages }}"
+        update_cache: yes
+      vars:
+        packages:
+        - apache2
+        - php
+        - libapache2-mod-php
+
+    - name: Start apache2
+      become: true
+      command: systemctl start apache2
+
+    - name: Create www group
+      become: true
+      command: groupadd www
+
+    - name: Create add ubuntu to www group
+      become: true
+      command: usermod -a -G www ubuntu
+
+    - name: Change www directory owner
+      become: true
+      command: chown -R root:www /var/www
+
+    - name: Change www directory permissions
+      become: true
+      command: chmod 2775 /var/www
+
+    - name: Change www file permissions for futures files
+      become: true
+      command: find /var/www -type d -exec sudo chmod 2775 {} +
+
+    - name: Change www file permissions recursively
+      become: true
+      command: find /var/www -type f -exec sudo chmod 0664 {} +
