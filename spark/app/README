@@ -50,3 +50,9 @@ root@kafka-0:/# kafka-console-producer.sh --topic topicA --broker-list localhost
 
 # Check queued messages on a topic
 kafka-run-class.sh  kafka.tools.GetOffsetShell --broker-list localhost:9093,kafka-1.kafka-svc:9093,kafka-2.kafka-svc:9093 --topic topicA
+
+# consume
+kafka-console-consumer.sh \
+    --bootstrap-server localhost:9093,kafka-1.kafka-svc:9093,kafka-2.kafka-svc:9093 \
+    --topic topicA \
+    --from-beginning
