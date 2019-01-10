@@ -1,6 +1,6 @@
 <?php
 
-#call the python script and format data in this format with x the date and y the number of view
+#call the python script to get data about a topic and format data in this format
 function getData(){
     //TODO getData
     return array(

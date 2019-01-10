@@ -5,13 +5,13 @@
 *
 */
 function getData($analyzeDate){
-    //TODO Call python to get data
+    //TODO Call python to get data about the top articles of the given date
     // $command = escapeshellcmd("python3 analyze.py $analyzeDate");
     // $output = shell_exec($command);
     return [
-        ["Article1", 9520525],
-        ["Article2", 5415648],
-        ["Article3", 2654666]];
+        ["Topic1", 9520525],
+        ["Topic2", 5415648],
+        ["Topic3", 2654666]];
 }
 
 /**
@@ -23,7 +23,7 @@ function generateTable($data){
        <thead class="thead-light">
        <tr>
          <th scope="col">Rank</th>
-         <th scope="col">Article</th>
+         <th scope="col">Topic</th>
          <th scope="col">Number of views</th>
        </tr>
        </thead>
