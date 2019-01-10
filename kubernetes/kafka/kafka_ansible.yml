@@ -25,7 +25,7 @@
       command: kubectl apply -f /tmp/zookeeper-deploy.yaml
 
     - name: Get Wanted zk pods
-      command: sh -c "kubectl describe statefulset zk | grep -Po '(?<=desired.{3})(.*)(?= total)'"
+      command: sh -c "kubectl describe statefulset zk | grep -Po '(?<=ZK_REPLICAS:.{11})(.*)$'"
       register: WantedZookeeperPods
 
     - name: Wait zk pods to run
@@ -59,7 +59,7 @@
       command: kubectl apply -f /tmp/kafka-deploy.yaml
 
     - name: Get Wanted kafka pods
-      command: sh -c "kubectl describe statefulset kafka | grep -Po '(?<=desired.{3})(.*)(?= total)'"
+      command: sh -c "kubectl describe statefulset kafka | grep -Po -m 1 '(?<=\"replicas\":)([0-9]+)'"
       register: WantedKafkaPods
 
     - name: Wait kafka pods to run
