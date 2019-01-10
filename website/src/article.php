@@ -4,15 +4,15 @@
 function getData(){
     //TODO getData
     return array(
-	array("x" => 19961213, "y" => 71),
-	array("x" => 19961214, "y" => 55),
-	array("x" => 19961215, "y" => 50),
-	array("x" => 19961216, "y" => 65),
-	array("x" => 19961217, "y" => 95),
-	array("x" => 19961218, "y" => 68),
-	array("x" => 19961219, "y" => 28),
-	array("x" => 19961220, "y" => 34),
-	array("x" => 19961221, "y" => 14),
+	array("date" => "1996-12-13", "val" => 71),
+	array("date" => "1996-12-14", "val" => 55),
+	array("date" => "1996-12-15", "val" => 50),
+	array("date" => "1996-12-16", "val" => 65),
+	array("date" => "1996-12-17", "val" => 95),
+	array("date" => "1996-12-18", "val" => 68),
+	array("date" => "1996-12-19", "val" => 28),
+	array("date" => "1996-12-20", "val" => 34),
+	array("date" => "1996-12-21", "val" => 14),
     );
 }
 
@@ -20,24 +20,43 @@ function displayGraph($data){
     $data = json_encode($data, JSON_NUMERIC_CHECK);
     $js = <<< JS
     window.onload = function () {
-                var chart = new CanvasJS.Chart("chartContainer", {
-                theme: "light1",
-                zoomEnabled: true,
-                animationEnabled: true,
-                title: {
-                    text: "Number of views"
-                },
-                data: [
-                {
-                    type: "line",
-                    dataPoints: $data
-                }
-                ]
-            });
-            chart.render();
-        }
+        var svg = d3.select("svg")
+              .attr("width", 1024)
+              .attr("height", 480)
+
+        var margin = {left:30, right:30, top: 10, bottom: 20}
+        var width = svg.attr("width") - margin.left - margin.right;
+        var height = svg.attr("height") - margin.bottom - margin.top;
+        var data = $data;
+
+        var x = d3.scaleTime().rangeRound([0, width]);
+        var y = d3.scaleLinear().rangeRound([height, 0]);
+
+        var xFormat = "%d-%m-%Y";;
+        var parseTime = d3.timeParse("%Y-%m-%d");
+
+        x.domain(d3.extent(data, function(d) { return parseTime(d.date); }));
+      	y.domain([0,d3.max(data, function(d) {return d3.max([d.val]);})]);
+
+        var a = function(d) {return d.val};
+
+        var g = svg.append("g").attr("transform",
+                        "translate(" + margin.left + "," + margin.top + ")");
+
+        var line = d3.line().x(function(d) { return x(parseTime(d.date)); })
+                            .y(function(d) { return y(d.val); })
+
+        g.append("path").datum(data).attr("d", line).attr("stroke", "blue").attr("stroke-width", 2).attr("fill", "none");
+
+        g.append("g").attr("transform", "translate(0," + height + ")")
+                     .call(d3.axisBottom(x).tickFormat(d3.timeFormat(xFormat)));
+        g.append("g").call(d3.axisLeft(y));
+
+
+
+    }
 JS;
-    echo "<div id='chartContainer'></div><script>$js</script>";
+    echo "<svg></svg><script>$js</script>";
 }
 
 
@@ -69,7 +88,7 @@ echo  <<<EOF
         <meta charset="utf-8">
         <title>Wikipedia Analyzer: Article history</title>
         <link rel="stylesheet" href="resources/css/bootstrap.min.css">
-        <script src="resources/js/canvasjs.min.js"></script>
+        <script src="https://d3js.org/d3.v4.min.js"></script>
     </head>
     <body>
     <a href="index.html" class="btn btn-primary btn-lg active" role="button" aria-pressed="true">Home</a>
@@ -110,6 +129,7 @@ if($data == null) {
 }
 
 displayGraph($data);
+
 echo "</div></body></html>";
 
- ?>
+?>
