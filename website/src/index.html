@@ -7,18 +7,42 @@
         <script src="resources/js/bootstrap.min.js" charset="utf-8"></script>
     </head>
     <body>
-        <div class="panel panel-default container mt-5 border rounded" style="width: 500px">
-            <h1 class="mt-2" style="text-align: center">Processus d'analyse</h1>
-            <hr/>
-            <form method="post" action="analyze.php">
-                <div class="form-group row">
-                    <label class="col-sm-2 col-form-label" style="text-align: right" for="analyzeDate">Date</label>
-                    <div class="col-sm-10">
-                        <input class="form-control" id="analyzeDate" type="text" name="date" placeholder="DD-MM-YYYY" />
+    <div class="container">
+        <div class="row">
+            <div class="panel panel-default container mt-5 border rounded col-sm" style="width: 500px">
+                <h2 class="mt-2" style="text-align: center">Top of the day</h1>
+                <hr/>
+                <form method="post" action="top.php">
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label" style="text-align: right" for="analyzeDate">Date</label>
+                        <div class="col-sm-10">
+                            <input class="form-control" id="analyzeDate" type="text" name="date" placeholder="DD-MM-YYYY" />
+                        </div>
                     </div>
-                </div>
-                <button class="mb-2 btn btn-primary btn-block" type="submit">Analyser les données</button>
-            </form>
+                    <button class="mb-2 btn btn-primary btn-block" type="submit">Analyser les données</button>
+                </form>
+            </div>
+
+
+            <div class="panel panel-default container mt-5 border rounded col-sm" style="width: 500px">
+                <h2 class="mt-2" style="text-align: center">Nombre de vue par  article </h1>
+                <hr/>
+                <form method="post" action="article.php">
+                    <div class="form-group row">
+                        <label class="col-sm-2 col-form-label" style="text-align: right" for="analyzeDate">Nom</label>
+                        <div class="col-sm-10">
+                            <input class="form-control" id="ArticleName" type="text" name="name" placeholder="Nom de l'article">
+                        </div>
+                        <label class="col-sm-2 col-form-label" style="text-align: right" for="analyzeDate">Date</label>
+                        <div class="col-sm-10">
+
+                            <input class="form-control" id="analyzeDate" type="text" name="date" placeholder="DD-MM-YYYY" />
+                        </div>
+
+                    </div>
+                    <button class="mb-2 btn btn-primary btn-block" type="submit">Analyser les données</button>
+                </form>
+            </div>
         </div>
     </body>
 </html>
