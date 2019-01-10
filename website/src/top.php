@@ -54,11 +54,12 @@ echo  <<<EOF
 <html>
     <head>
         <meta charset="utf-8">
-        <title>Wikipedia Analyzer</title>
+        <title>Wikipedia Analyzer: Top of the day</title>
         <link rel="stylesheet" href="resources/css/bootstrap.min.css">
         <script src="resources/js/bootstrap.min.js" charset="utf-8"></script>
     </head>
     <body>
+    <a href="index.html" class="btn btn-primary btn-lg active" role="button" aria-pressed="true">Home</a>
     <div class="container">
 EOF;
 
@@ -78,7 +79,7 @@ $output = shell_exec($command);
 
 
 if($output == null) {
-    echo "Error during command: python3 analyze.py $analyzeDate";
+    echo "Error: No data retrieved";
     return;
 }
 
