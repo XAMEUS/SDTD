@@ -1,9 +1,13 @@
 <?php
 
-#call the python script to get data about a topic and format data in this format
-function getData(){
+/**
+* call the python script to get data about a topic and format data in this format:
+* [["date" : "1996-12-13", "val": 10],["date" : "1996-12-13", "val": 15]]
+* Do not forget to encode with json_encode($data, JSON_NUMERIC_CHECK);
+*/
+function getData($name, $startDate, $endDate){
     //TODO getData
-    return array(
+    $data =  array(
 	array("date" => "1996-12-13", "val" => 71),
 	array("date" => "1996-12-14", "val" => 55),
 	array("date" => "1996-12-15", "val" => 50),
@@ -14,10 +18,10 @@ function getData(){
 	array("date" => "1996-12-20", "val" => 34),
 	array("date" => "1996-12-21", "val" => 14),
     );
+    return json_encode($data, JSON_NUMERIC_CHECK);
 }
 
 function displayGraph($data){
-    $data = json_encode($data, JSON_NUMERIC_CHECK);
     $js = <<< JS
     window.onload = function () {
         var svg = d3.select("svg")
