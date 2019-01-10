@@ -1,11 +1,13 @@
 <?php
 /**
-* Take the output of the python script to format it in a 2D array like this
+* call the python script and and format the output to return a 2D array like this
 * [[article1, nbviews], [article2, nb views],...] sorted by rank
 *
 */
-function formatOutput($output){
-    //TODO Implement this function to return a correct array using python's data
+function getData($analyzeDate){
+    //TODO Call python to get data
+    // $command = escapeshellcmd("python3 analyze.py $analyzeDate");
+    // $output = shell_exec($command);
     return [
         ["Article1", 9520525],
         ["Article2", 5415648],
@@ -15,7 +17,7 @@ function formatOutput($output){
 /**
 * Take the python output and generate a table with article rank (using formatOutput)
 **/
-function generateTable($output){
+function generateTable($data){
      $table = <<<EOF
      <table class="table table-striped">
        <thead class="thead-light">
@@ -29,7 +31,7 @@ function generateTable($output){
 EOF;
 
      $i = 1;
-     foreach (formatOutput($output) as $elt) {
+     foreach ($data as $elt) {
          $table .= <<< EOF
          <tr>
            <th scope="row">$i</th>
@@ -48,6 +50,11 @@ EOF;
     return $table;
 }
 
+function isDateValid($date){
+    $pattern = "/[1-9][0-9]{3}-(0[1-9]|1[0-2])-([012][1-9]|3[01])/";
+    return preg_match($pattern, $date);
+}
+
 
 echo  <<<EOF
 <!DOCTYPE html>
@@ -64,25 +71,21 @@ echo  <<<EOF
 EOF;
 
 
-if(!(isset($_POST["date"]) && !empty($_POST["date"]))) {
-    echo "<h1>Error</h1> Please specify a date <a href='index.html'>Back to home</a></body></html>";
+if(!(isset($_POST["date"]) && !empty($_POST["date"] && isDateValid($_POST["date"])))) {
+    echo "<h1>Error</h1> Please specify a valid date <a href='index.html'>Back to home</a></body></html>";
     return;
 }
 
-$analyzeDate = $_POST["date"];
-echo "<h1 class='display-4 text-center'>Top articles of $analyzeDate</h1>";
+$date = $_POST["date"];
+echo "<h1 class='display-4 text-center'>Top articles of $date</h1>";
 
+$data = getData($date);
 
-#TODO Recuperer donnes de python
-$command = escapeshellcmd("python3 analyze.py $analyzeDate");
-$output = shell_exec($command);
-
-
-if($output == null) {
+if($data == null) {
     echo "Error: No data retrieved";
     return;
 }
 
-echo generateTable($output);
+echo generateTable($data);
 
 echo "</div></body></html>";
