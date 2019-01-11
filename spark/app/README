@@ -54,5 +54,15 @@ kafka-run-class.sh  kafka.tools.GetOffsetShell --broker-list localhost:9093,kafk
 # consume
 kafka-console-consumer.sh \
     --bootstrap-server localhost:9093,kafka-1.kafka-svc:9093,kafka-2.kafka-svc:9093 \
-    --topic topicA \
+    --topic topicC \
     --from-beginning
+
+
+
+
+# Try the application
+# Add a request
+echo '{"article":"Albert_Einstein", "from":"2015-10-01", "to":"2015-10-31"}' | kafka-console-producer.sh --topic requests --broker-list localhost:9093
+
+# Read the response
+kafka-run-class.sh  kafka.tools.GetOffsetShell --broker-list localhost:9093,kafka-1.kafka-svc:9093,kafka-2.kafka-svc:9093 --topic responses

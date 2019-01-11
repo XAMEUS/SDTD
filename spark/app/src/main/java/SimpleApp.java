@@ -24,15 +24,16 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.json.*;
+import scala.Tuple2;
 
 import static java.util.Collections.singletonList;
 
 
 public final class SimpleApp {
 
-    private final static String TOPIC_QUERIES = "topicA";
-    private final static String TOPIC_DATA = "topicB";
-    private final static String TOPIC_RESULTS = "topicB";
+    private final static String TOPIC_QUERIES = "requests";
+    private final static String TOPIC_DATA = "articles";
+    private final static String TOPIC_RESULTS = "responses";
 
     public static void main(final String[] args) throws InterruptedException {
 
@@ -45,7 +46,7 @@ public final class SimpleApp {
                 .appName("MongoSparkConnectorIntro")
 //                .config("spark.mongodb.input.uri",  "mongodb://mongo-0.mongodb-service:27017,mongo-1.mongodb-service:27017,mongo-2.mongodb-service:27017/test.myCollection?replicaSet=my_replica_set")
 //                .config("spark.mongodb.output.uri", "mongodb://mongo-0.mongodb-service:27017,mongo-1.mongodb-service:27017,mongo-2.mongodb-service:27017/test.myCollection?replicaSet=my_replica_set")
-                .config("spark.mongodb.input.uri",  "mongodb://mongo-0.mongodb-service:27017/test.myCollection")
+                .config("spark.mongodb.input.uri", "mongodb://mongo-0.mongodb-service:27017/test.myCollection")
                 .config("spark.mongodb.output.uri", "mongodb://mongo-0.mongodb-service:27017/test.myCollection")
                 .getOrCreate();
 
@@ -134,7 +135,7 @@ public final class SimpleApp {
 //                JSONObject obj;
 //                if (!Objects.equals(error, "")) {
 //                    obj = new JSONObject();
-//                    obj.append("error", error);
+//                    obj.put("error", error);
 ////                    MyKafkaProducer.getProducer().send(new ProducerRecord<>(TOPIC_ERROR, null, obj.toString()));
 //                } else {
 //                    obj = new JSONObject(resultText);
@@ -169,11 +170,11 @@ public final class SimpleApp {
                 JSONObject obj;
                 try {
                     obj = new JSONObject(message.value());
+                    return Document.parse(obj.toString());
                 } catch (Exception e) {
-                    obj = new JSONObject();
+                    return null;
                 }
-                return Document.parse(obj.toString());
-            });
+            }).filter(document -> document != null);
 
             MongoSpark.save(documents);
 
@@ -182,38 +183,133 @@ public final class SimpleApp {
         JavaMongoRDD<Document> mongo_rdd = MongoSpark.load(jsc);
 
         stream.foreachRDD(rdd -> {
-            List<JSONObject> queries = rdd.filter(entry -> Objects.equals(entry.topic(), TOPIC_QUERIES)).map(message -> new JSONObject(message.value())).collect();
-            for (JSONObject query: queries) {
-                String req_id = query.getString("req_id");
-                String article = query.getString("article");
-                String from = query.getString("from");
-                String to = query.getString("to");
+            List<String> queries = rdd.filter(entry -> Objects.equals(entry.topic(), TOPIC_QUERIES)).map(message -> message.value()).collect();
+            for (String strQuery : queries) {
+                try {
 
-                JavaMongoRDD<Document> aggregatedRdd = mongo_rdd.withPipeline(singletonList(Document.parse("{ $match: { article: \""+ article +"\", date : { $gte : \""+ from +"\", $lte: \""+ to +"\" } } }")));
-                Integer totalViews = aggregatedRdd.map(elm -> elm.getInteger("views")).reduce((views1, views2) -> views1 + views2);
+                    JSONObject query = new JSONObject(strQuery);
+                    String article = query.getString("article");
+                    String from = query.getString("from");
+                    String to = query.getString("to");
 
-                JSONObject obj = new JSONObject();
-                obj.append("req_id", req_id);
-                obj.append("result", totalViews);
+                    JavaMongoRDD<Document> aggregatedRdd = mongo_rdd.withPipeline(singletonList(Document.parse("{ $match: { article: \"" + article + "\", date : { $gte : \"" + from + "\", $lte: \"" + to + "\" } } }")));
+                    List<Tuple2<String, Integer>> views = aggregatedRdd.map(elm -> new Tuple2<String, Integer>(elm.getString("date"), elm.getInteger("views"))).collect();
+                    long returnCount = aggregatedRdd.count();
+                    Integer totalViews = 0;
+                    if (returnCount > 0) {
+                        totalViews = aggregatedRdd.map(elm -> elm.getInteger("views")).reduce((views1, views2) -> views1 + views2);
+                    }
 
-                MyKafkaProducer.getProducer().send(new ProducerRecord<>(TOPIC_RESULTS, null, obj.toString()));
+                    // Collect missing data from the databaase
+                    List<String> datesInDB = aggregatedRdd.map(elm -> elm.getString("date")).collect();
+
+
+                    Integer totalViewNewData = 0;
+                    List<Tuple2<String, Integer>> viewsNewData = new LinkedList<>();
+
+                    {
+                        String _article = query.getString("article");
+                        String _from = query.getString("from").replace("-", "") + "00";
+                        String _to = query.getString("to").replace("-", "") + "00";
+
+
+                        URL url = new URL("https://wikimedia.org/api/rest_v1/metrics/pageviews/per-article/en.wikipedia/all-access/all-agents/" + _article + "/daily/" + _from + "/" + _to);
+                        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                        conn.setRequestMethod("GET");
+                        conn.setRequestProperty("Accept", "application/json");
+
+                        String error = "";
+                        String resultText = "";
+
+                        if (conn.getResponseCode() != 200) {
+                            error = "Failed : HTTP error code : " + conn.getResponseCode();
+                        } else {
+                            BufferedReader br = new BufferedReader(new InputStreamReader(
+                                    (conn.getInputStream())));
+
+                            StringBuilder response = new StringBuilder();
+
+                            String line;
+                            System.out.println("Output from Server .... \n");
+                            while ((line = br.readLine()) != null) {
+                                response.append(line);
+                            }
+                            resultText = response.toString();
+
+
+                            System.out.println("============= HTTP Response =============");
+                            System.out.println(resultText);
+                            System.out.println("=========================================");
+                        }
+
+                        conn.disconnect();
+
+                        List<JSONObject> new_data = new LinkedList<>();
+
+                        JSONObject obj;
+                        if (!Objects.equals(error, "")) {
+                            obj = new JSONObject();
+                            obj.put("error", error);
+                            //                    MyKafkaProducer.getProducer().send(new ProducerRecord<>(TOPIC_ERROR, null, obj.toString()));
+                        } else {
+                            obj = new JSONObject(resultText);
+
+                            obj.getJSONArray("items").forEach(o -> {
+                                if (o instanceof JSONObject) {
+                                    JSONObject entry = (JSONObject) o;
+                                    String timestamp = entry.getString("timestamp");
+                                    String date = timestamp.substring(0, 4) + "-" + timestamp.substring(4, 6) + "-" + timestamp.substring(6, 8);
+
+                                    if (!datesInDB.contains(date)) {
+                                        JSONObject dbentry = new JSONObject();
+                                        dbentry.put("article", entry.getString("article"));
+                                        dbentry.put("views", entry.getInt("views"));
+                                        dbentry.put("rank", entry.optString("rank"));
+                                        dbentry.put("date", timestamp.substring(0, 4) + "-" + timestamp.substring(4, 6) + "-" + timestamp.substring(6, 8));
+
+                                        viewsNewData.add(new Tuple2(date, entry.getInt("views")));
+
+                                        new_data.add(dbentry);
+
+                                        MyKafkaProducer.getProducer().send(new ProducerRecord<>(TOPIC_DATA, null, dbentry.toString()));
+                                    }
+
+                                }
+                            });
+                        }
+
+                    }
+
+
+                    // Construction of the response
+                    JSONObject obj = new JSONObject();
+                    obj.put("request", strQuery);
+
+
+                    List<String> viewsListJSON = new LinkedList<>();
+                    views.forEach(tuple -> {
+                        viewsListJSON.add("{\"date\": \"" + tuple._1() + "\", \"views\": \"" + tuple._2() + "\"}");
+                    });
+
+                    for (Tuple2 tuple: viewsNewData) {
+                        totalViewNewData += (Integer) tuple._2();
+                        viewsListJSON.add("{\"date\": \"" + tuple._1() + "\", \"views\": \"" + tuple._2() + "\"}");
+                    }
+
+                    JSONObject results = new JSONObject();
+                    results.put("totalViews", totalViews + totalViewNewData);
+                    results.put("views", viewsListJSON);
+                    obj.put("results", results);
+
+                    MyKafkaProducer.getProducer().send(new ProducerRecord<>(TOPIC_RESULTS, null, obj.toString()));
+
+                } catch (Exception e) {
+                    System.err.println("Exception with query: " + strQuery);
+                    e.printStackTrace();
+                }
             }
-
-//            List<ConsumerRecord<String, String>> l = rdd.filter(entry -> Objects.equals(entry.topic(), TOPIC_DATA)).collect();//.map(message -> {
-//                JSONObject obj;
-//                try {
-//                    obj = new JSONObject(message.value());
-//                } catch (Exception e) {
-//                    obj = new JSONObject();
-//                }
-//                return Document.parse(obj.toString());
-//            });
-//
-//            MongoSpark.save(documents);
-
         });
 
-//            MongoSpark.lo
 
 
 //            rdd.foreachPartition(partitionOfRecords -> {
@@ -264,8 +360,8 @@ public final class SimpleApp {
 //
 //
 //            JSONObject obj = new JSONObject();
-//            obj.append("req_id", req_id);
-//            obj.append("result", totalViews);
+//            obj.put("req_id", req_id);
+//            obj.put("result", totalViews);
 //
 //            System.out.println("========================");
 //            System.out.println("========================");
@@ -280,29 +376,5 @@ public final class SimpleApp {
 //            MyKafkaProducer.getProducer().send(new ProducerRecord<>(TOPIC_DATA, null, obj.toString()));
 //
 //        }
-//
-//
-//
-//        // Analyze data from MongoDB
-//        System.out.println(rdd.count());
-//        rdd.foreach(elm -> {
-//            System.out.println(elm.toJson());
-//        });
-//        System.out.println(rdd.first().toJson());
-
-//        // Working Mongo + Spark example
-//        // Create a RDD of 10 documents
-//        JavaRDD<Document> documents = jsc.parallelize(asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).map
-//                (new Function<Integer, Document>() {
-//                    public Document call(final Integer i) throws Exception {
-//                        return Document.parse("{test: " + i + "}");
-//                    }
-//                });
-//
-//        /*Start Example: Save data from RDD to MongoDB*****************/
-//        MongoSpark.save(documents);
-//        /*End Example**************************************************/
-//
-//        jsc.close();
     }
 }

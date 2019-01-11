@@ -9,16 +9,29 @@
     - debug: msg="{{ kubernetes_ip.stdout }}"
 
     - name: Run the spark program
-      command: "spark-2.4.0-bin-hadoop2.7/bin/spark-submit \
+      command: "nohup spark-2.4.0-bin-hadoop2.7/bin/spark-submit \
           --master k8s://{{ kubernetes_ip.stdout }} \
           --deploy-mode cluster \
-          --name spark-pi \
-          --class org.apache.spark.examples.SparkPi \
+          --name spark-kafka-mongo \
+          --class SimpleApp \
           --conf spark.executor.instances=2 \
           --driver-memory=1g \
           --executor-memory=1g \
           --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
           --conf spark.kubernetes.container.image=docker.io/theipple/spark \
-          local:///opt/spark/examples/jars/spark-examples_2.11-2.4.0.jar"
+          https://s3.eu-west-3.amazonaws.com/sdtdk8s/simple-project-1.0-jar-with-dependencies.jar"
+
+    # - name: Run the spark program
+    #   command: "spark-2.4.0-bin-hadoop2.7/bin/spark-submit \
+    #       --master k8s://{{ kubernetes_ip.stdout }} \
+    #       --deploy-mode cluster \
+    #       --name spark-pi \
+    #       --class org.apache.spark.examples.SparkPi \
+    #       --conf spark.executor.instances=2 \
+    #       --driver-memory=1g \
+    #       --executor-memory=1g \
+    #       --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
+    #       --conf spark.kubernetes.container.image=docker.io/theipple/spark \
+    #       local:///opt/spark/examples/jars/spark-examples_2.11-2.4.0.jar"
 
     - debug: msg="see the result on the logs of the driver node"
