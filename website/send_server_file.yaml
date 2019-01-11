@@ -1,0 +1,14 @@
+---
+- hosts: k8s_master
+  gather_facts: no
+  tasks:
+    - name: Copy web-server file to master
+      copy:
+          src: ./src/
+          dest: /tmp/src/
+          owner: ubuntu
+          group: ubuntu
+          mode: u=rw,g=r,o=r
+
+    - name: Copy web-server file to pod
+      command: kubectl cp /tmp/src/ web-server:/var/www/html/
