@@ -1,0 +1,5 @@
+apt-get update -y
+export DEBIAN_FRONTEND=noninteractive
+echo "Europe/Dublin" > /etc/timezone
+apt-get install -y apache2 php libapache2-mod-php
+/etc/init.d/apache2 start

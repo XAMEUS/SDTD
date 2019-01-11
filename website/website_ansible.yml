@@ -2,41 +2,35 @@
 - hosts: k8s_master
   gather_facts: no
   tasks:
-    - name: Install apache server
-      become: true
-      apt:
-        name: "{{ packages }}"
-        update_cache: yes
-      vars:
-        packages:
-        - apache2
-        - php
-        - libapache2-mod-php
+    - name: Copy web-server deployement file
+      copy:
+          src: ./apache-deploy.yaml
+          dest: /tmp/apache-deploy.yaml
+          owner: ubuntu
+          group: ubuntu
+          mode: u=rw,g=r,o=r
 
-    - name: Start apache2
-      become: true
-      command: systemctl start apache2
+    - name: Deploy the web server
+      command: kubectl apply -f /tmp/apache-deploy.yaml
 
-    - name: Create www group
-      become: true
-      command: groupadd www
+    - name: Wait web-server pod to run
+      shell: sh -c "kubectl describe pods web-server | grep -Po '(?<=Status:).*' | sed 's/ //g'"
+      register: WebServerStatus
+      changed_when: False
+      until: WebServerStatus.stdout == "Running"
+      retries: 20
+      delay: 5
 
-    - name: Create add ubuntu to www group
-      become: true
-      command: usermod -a -G www ubuntu
+    - name: Create web-server service
+      command: kubectl create service nodeport web-server --tcp=80:80
 
-    - name: Change www directory owner
-      become: true
-      command: chown -R root:www /var/www
+    - name: Copy apache initialization commands file
+      copy:
+          src: ./setup_apache_cmd
+          dest: /tmp/setup_apache_cmd
+          owner: ubuntu
+          group: ubuntu
+          mode: u=rw,g=r,o=r
 
-    - name: Change www directory permissions
-      become: true
-      command: chmod 2775 /var/www
-
-    - name: Change www file permissions for futures files
-      become: true
-      command: find /var/www -type d -exec sudo chmod 2775 {} +
-
-    - name: Change www file permissions recursively
-      become: true
-      command: find /var/www -type f -exec sudo chmod 0664 {} +
+    - name: Setup apache server on pod
+      command: sh -c "kubectl exec -it web-server bash < /tmp/setup_apache_cmd"
