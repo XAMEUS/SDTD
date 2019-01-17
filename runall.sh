@@ -12,10 +12,11 @@ ansible-playbook -i aws_ansible/hosts kubernetes/mongo/mongodb.yml
 
 ansible-playbook -i aws_ansible/hosts spark/setup.yml
 
-ansible-playbook -i aws_ansible/hosts spark/run_job.yml
 
 ansible-playbook -i aws_ansible/hosts kubernetes/web-ui/setup.yaml
 
 ansible-playbook -i aws_ansible/hosts kubernetes/kafka/kafka_ansible.yml
 
 ansible-playbook -i aws_ansible/hosts website/website_ansible.yml
+
+ansible-playbook -i aws_ansible/hosts spark/run_job.yml
