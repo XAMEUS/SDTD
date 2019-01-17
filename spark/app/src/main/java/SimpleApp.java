@@ -176,8 +176,38 @@ public final class SimpleApp {
                 }
             }).filter(document -> document != null);
 
-            MongoSpark.save(documents);
+            JavaMongoRDD<Document> rddData = MongoSpark.load(jsc);
+            Map<String, List<String>> articleList = new HashMap<>();
+            documents.foreach(doc -> {
+				String article = doc.getString("article");
+				String date = doc.getString("date");
+		
+		    	JavaMongoRDD<Document> aggregatedRdd = rddData.withPipeline(
+		    			Arrays.asList(
+	    					Document.parse("{ $match: { article : \"" + article + "\" , date : \"" + date + "\" } }")
+		    			)
+		    	);
+		    	if (aggregatedRdd.count() == 0) {
+		    		if (articleList.containsKey(article)) {
+		    			articleList.get(article).add(date);
+		    		} else {
+		    			articleList.put(article, Arrays.asList(date));
+		    		}
+		    	}
+            });
 
+            documents.filter(document -> articleList.containsKey(document.getString("article")) && articleList.get(document.getString("article")).contains(document.getString("date")) );
+
+//            documents.mapToPair(document -> new Tuple2<>(document.getString("article"), Arrays.asList(document.getInteger("views"), document.getInteger("rank"), document.getString("date"))))
+//            	.reduceByKey((array1, array2) -> { array1.addAll(array2); return array1; })
+//                .map(tuple -> {
+//                    JSONObject obj = new JSONObject();
+//                    obj.put("article", tuple._1());
+//                    obj.put("views", new JSONArray(tuple._2()));
+//                    return obj;
+//                });
+            
+            MongoSpark.save(documents);
         });
 
         JavaMongoRDD<Document> mongo_rdd = MongoSpark.load(jsc);
