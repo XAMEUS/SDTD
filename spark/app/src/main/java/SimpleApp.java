@@ -417,7 +417,7 @@ public final class SimpleApp {
         ).mapToPair(document -> new Tuple2<>(document.getString("article"), document.getInteger("views")))
                 .reduceByKey((views1, views2) -> views1 + views2)
                 .mapToPair(pair -> new Tuple2<>(pair._2(), pair._1()))
-                .sortByKey()
+                .sortByKey(false)
                 .take(topSize);
 
 

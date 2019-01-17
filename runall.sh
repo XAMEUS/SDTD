@@ -20,3 +20,5 @@ ansible-playbook -i aws_ansible/hosts kubernetes/kafka/kafka_ansible.yml
 ansible-playbook -i aws_ansible/hosts website/website_ansible.yml
 
 ansible-playbook -i aws_ansible/hosts spark/run_job.yml
+
+ansible-playbook -i aws_ansible/hosts website/send_server_file.yml
