@@ -7,7 +7,7 @@
 */
 function getData($name, $startDate, $endDate){
     //TODO getData
-    $data =  array(
+    /*$data =  array(
 	array("date" => "1996-12-13", "val" => 71),
 	array("date" => "1996-12-14", "val" => 55),
 	array("date" => "1996-12-15", "val" => 50),
@@ -18,7 +18,9 @@ function getData($name, $startDate, $endDate){
 	array("date" => "1996-12-20", "val" => 34),
 	array("date" => "1996-12-21", "val" => 14),
     );
-    return json_encode($data, JSON_NUMERIC_CHECK);
+    return json_encode($data, JSON_NUMERIC_CHECK);*/
+    echo "python3 request.py " . escapeshellarg($startDate) . " " . escapeshellarg($endDate) . " " . escapeshellarg($name);
+    echo shell_exec("python3 request.py 0 " . $startDate . " " . $endDate . " " . escapeshellarg($name));
 }
 
 function displayGraph($data){
@@ -66,7 +68,8 @@ JS;
 
 function isDateValid($date){
     $pattern = "/[1-9][0-9]{3}-(0[1-9]|1[0-2])-([012][1-9]|3[01])/";
-    return preg_match($pattern, $date);
+    //return preg_match($pattern, $date);
+    return true;
 }
 
 /**

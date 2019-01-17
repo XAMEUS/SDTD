@@ -1,7 +1,7 @@
 apt-get update -y
 echo "Install dependencies for the app"
-apt-get install python3 python3-pip
-pip install kafka
+apt-get install -y python3 python3-pip
+pip3 install kafka
 
 export DEBIAN_FRONTEND=noninteractive
 echo "Europe/Dublin" > /etc/timezone

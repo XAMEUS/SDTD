@@ -16,9 +16,9 @@ HELP = """
 def main(argv):
     request = None
     if int(argv[1]) == 0:
-        request = {"type":0, "from":argv[2], "to":argv[3], "article":argv[4]}
+        request = {"type": "info", "from":argv[2], "to":argv[3], "article":argv[4]}
     if int(argv[1]) == 1:
-        request = {"type":1, "from":argv[2], "to":argv[3], "tops":int(argv[4])}
+        request = {"type": "tops", "from":argv[2], "to":argv[3], "tops":int(argv[4])}
     if int(argv[1]) == 2:
         request = {"todo": "todo"}
     data = json.dumps({"request": request}).encode()
