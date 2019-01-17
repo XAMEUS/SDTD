@@ -9,7 +9,7 @@
     - debug: msg="{{ kubernetes_ip.stdout }}"
 
     - name: Run the spark program
-      command: "nohup spark-2.4.0-bin-hadoop2.7/bin/spark-submit \
+      shell: "nohup spark-2.4.0-bin-hadoop2.7/bin/spark-submit \
           --master k8s://{{ kubernetes_ip.stdout }} \
           --deploy-mode cluster \
           --name spark-kafka-mongo \
@@ -19,7 +19,7 @@
           --executor-memory=1g \
           --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
           --conf spark.kubernetes.container.image=docker.io/theipple/spark \
-          https://s3.eu-west-3.amazonaws.com/sdtdk8s/simple-project-1.0-jar-with-dependencies.jar"
+          https://s3.eu-west-3.amazonaws.com/sdtdk8s/simple-project-1.0-jar-with-dependencies.jar </dev/null >/dev/null 2>&1 &"
 
     # - name: Run the spark program
     #   command: "spark-2.4.0-bin-hadoop2.7/bin/spark-submit \
