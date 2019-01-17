@@ -1,6 +1,5 @@
 import com.mongodb.spark.MongoSpark;
 import com.mongodb.spark.rdd.api.java.JavaMongoRDD;
-import org.apache.kafka.clients.producer.Producer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
@@ -19,8 +18,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.text.ParseException;
 import java.util.*;
@@ -195,12 +192,13 @@ public final class SimpleApp {
                     JSONObject query = new JSONObject(strQuery);
                     JSONObject request = query.getJSONObject("request");
 
+                    // We execute the query and send the result through Kafka messages
                     switch (request.getString("type")) {
                         case "infos":
                             infoRequest(request, mongo_rdd);
                             break;
                         case "tops":
-                            // TODO
+                            topRequest(request, mongo_rdd);
                             break;
                         default:
                             break;
@@ -219,12 +217,21 @@ public final class SimpleApp {
         // No code will be executed after this line
     }
 
-
+    /**
+     * Get Views information for an `article` between `from` and `to`
+     * Result will be sent to kafka topic TOPIC_RESULTS
+     *
+     * @param request JSONObject {article: String, from: String, to: String}
+     * @param mongo_rdd
+     * @throws IOException
+     * @throws ParseException
+     */
     private static void infoRequest(JSONObject request, JavaMongoRDD<Document> mongo_rdd) throws IOException, ParseException {
         String article = request.getString("article");
         String from = request.getString("from");
         String to = request.getString("to");
 
+        // Get data from database
         JavaMongoRDD<Document> aggregatedRdd = mongo_rdd.withPipeline(singletonList(Document.parse("{ $match: { article: \"" + article + "\", date : { $gte : \"" + from + "\", $lte: \"" + to + "\" } } }")));
         List<Tuple2<String, Integer>> views = aggregatedRdd.map(elm -> new Tuple2<String, Integer>(elm.getString("date"), elm.getInteger("views"))).collect();
         long returnCount = aggregatedRdd.count();
@@ -241,28 +248,25 @@ public final class SimpleApp {
         {
             // We check which dates are missing
             HashSet<String> knownDates = new HashSet<>();
-            knownDates.addAll(datesInDB);//DateUtils.getDatesBetween(from, to));
-
+            knownDates.addAll(datesInDB);
 
             for (String date : DateUtils.getDatesBetween(from, to)) {
                 if (!knownDates.contains(date)) {
                     missingDates.add(date);
                 }
             }
-
         }
-
 
         Integer totalViewNewData = 0;
         List<Tuple2<String, Integer>> viewsNewData = new LinkedList<>();
 
-        System.out.println("=================================================");
-        for (String missingDate : missingDates) {
-            System.out.println(missingDate);
-        }
-        System.out.println("=================================================");
+//        System.out.println("=================================================");
+//        for (String missingDate : missingDates) {
+//            System.out.println(missingDate);
+//        }
+//        System.out.println("=================================================");
 
-        // Retrieving the missing data
+        // Retrieving the missing data from the API
         if (missingDates.size() > 0) {
             String _article = request.getString("article");
             String _from = request.getString("from").replace("-", "") + "00";
@@ -291,11 +295,6 @@ public final class SimpleApp {
                     response.append(line);
                 }
                 resultText = response.toString();
-
-
-                System.out.println("============= HTTP Response =============");
-                System.out.println(resultText);
-                System.out.println("=========================================");
             }
 
             conn.disconnect();
@@ -304,7 +303,6 @@ public final class SimpleApp {
             if (!Objects.equals(error, "")) {
                 obj = new JSONObject();
                 obj.put("error", error);
-                //                    MyKafkaProducer.getProducer().send(new ProducerRecord<>(TOPIC_ERROR, null, obj.toString()));
             } else {
                 obj = new JSONObject(resultText);
 
@@ -325,11 +323,9 @@ public final class SimpleApp {
 
                             MyKafkaProducer.getProducer().send(new ProducerRecord<>(TOPIC_DATA, null, dbentry.toString()));
                         }
-
                     }
                 });
             }
-
         }
 
 
@@ -352,6 +348,61 @@ public final class SimpleApp {
         results.put("totalViews", totalViews + totalViewNewData);
         results.put("views", viewsListJSON);
         obj.put("results", results);
+
+        MyKafkaProducer.getProducer().send(new ProducerRecord<>(TOPIC_RESULTS, null, obj.toString()));
+    }
+
+
+    /**
+     * Retreive TOP article for a period determined by `from` and `to`
+     *
+     * @param request
+     * @param mongo_rdd
+     * @throws IOException
+     * @throws ParseException
+     */
+    private static void topRequest(JSONObject request, JavaMongoRDD<Document> mongo_rdd) throws IOException, ParseException {
+        String from = request.getString("from");
+        String to = request.getString("to");
+        Integer topSize;
+        if (request.isNull("top_size")) {
+            topSize = 100;
+        } else {
+            topSize = request.getInt("top_size");
+            if (topSize <= 0) {
+                return;
+            }
+        }
+
+        List<Tuple2<Integer, String>> articleViews = mongo_rdd.withPipeline(
+                singletonList(
+                        Document.parse("{ $match: { date : { $gte : \"" + from + "\", $lte: \"" + to + "\" } } }")
+                )
+        ).mapToPair(document -> new Tuple2<>(document.getString("article"), document.getInteger("views")))
+                .reduceByKey((views1, views2) -> views1 + views2)
+                .mapToPair(pair -> new Tuple2<>(pair._2(), pair._1()))
+                .sortByKey()
+                .take(topSize);
+
+
+        JSONArray response = new JSONArray();
+
+        Integer rank = 1;
+        for (Tuple2 articleView : articleViews) {
+            JSONObject article = new JSONObject();
+
+            article.put("rank", rank);
+            article.put("article", articleView._2());
+            article.put("views", articleView._1());
+
+            rank++;
+
+            response.put(article);
+        }
+
+        JSONObject obj = new JSONObject();
+        obj.put("request", request);
+        obj.put("response", response);
 
         MyKafkaProducer.getProducer().send(new ProducerRecord<>(TOPIC_RESULTS, null, obj.toString()));
     }
