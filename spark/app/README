@@ -45,7 +45,7 @@ kafka-topics.sh --create \
 
 # To add kafka messages
 $ kubectl exec -it kafka-0 bash
-root@kafka-0:/# kafka-console-producer.sh --topic topicA --broker-list localhost:9093
+root@kafka-0:/# kafka-console-producer.sh --topic requests --broker-list localhost:9093
 
 
 # Check queued messages on a topic
@@ -54,7 +54,7 @@ kafka-run-class.sh  kafka.tools.GetOffsetShell --broker-list localhost:9093,kafk
 # consume
 kafka-console-consumer.sh \
     --bootstrap-server localhost:9093,kafka-1.kafka-svc:9093,kafka-2.kafka-svc:9093 \
-    --topic topicC \
+    --topic responses \
     --from-beginning
 
 
@@ -66,3 +66,11 @@ echo '{"article":"Albert_Einstein", "from":"2015-10-01", "to":"2015-10-31"}' | k
 
 # Read the response
 kafka-run-class.sh  kafka.tools.GetOffsetShell --broker-list localhost:9093,kafka-1.kafka-svc:9093,kafka-2.kafka-svc:9093 --topic responses
+
+
+
+# Info article:
+{"type": "infos", "article":"Albert_Einstein", "from":"2015-10-01", "to":"2015-10-31"}
+
+# Top articles:
+{"type": "tops", "from":"2016-01-01", "to":"2016-02-01", "top_size": 500}
