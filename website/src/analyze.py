@@ -9,9 +9,9 @@ logging.basicConfig(level=logging.DEBUG)
 from kafka import KafkaProducer
 
 # Run this program
-# python3 analyse.py 2016-12-01
-# python3 analyse.py 2016-12-01 2016-12-31
-# python3 analyse.py 2018-01-01 2018-12-31
+# python3 analyze.py 2016-12-01
+# python3 analyze.py 2016-12-01 2016-12-31
+# python3 analyze.py 2018-01-01 2018-12-31
 
 
 # Example call of the API

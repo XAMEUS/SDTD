@@ -190,7 +190,7 @@ public final class SimpleApp {
 
 		    	JavaMongoRDD<Document> aggregatedRdd = mongo_rdd.withPipeline(
 		    			Arrays.asList(
-	    					Document.parse("{ $match: { article : \"" + article + "\" , date : \"" + date + "\" } }")
+	    					Document.parse("{ $match: { article : \"" + article.replace("\"", "\\\"") + "\" , date : \"" + date + "\" } }")
 		    			)
 		    	);
 
@@ -268,7 +268,7 @@ public final class SimpleApp {
         String to = request.getString("to");
 
         // Get data from database
-        JavaMongoRDD<Document> aggregatedRdd = mongo_rdd.withPipeline(singletonList(Document.parse("{ $match: { article: \"" + article + "\", date : { $gte : \"" + from + "\", $lte: \"" + to + "\" } } }")));
+        JavaMongoRDD<Document> aggregatedRdd = mongo_rdd.withPipeline(singletonList(Document.parse("{ $match: { article: \"" + article.replace("\"", "\\\"") + "\", date : { $gte : \"" + from + "\", $lte: \"" + to + "\" } } }")));
         List<Tuple2<String, Integer>> views = aggregatedRdd.map(elm -> new Tuple2<String, Integer>(elm.getString("date"), elm.getInteger("views"))).collect();
         long returnCount = aggregatedRdd.count();
         Integer totalViews = 0;
@@ -370,20 +370,20 @@ public final class SimpleApp {
         obj.put("request", request);
 
 
-        List<String> viewsListJSON = new LinkedList<>();
+        JSONArray viewsListJSON = new JSONArray();
         views.forEach(tuple -> {
-            viewsListJSON.add("{\"date\": \"" + tuple._1() + "\", \"views\": \"" + tuple._2() + "\"}");
+            viewsListJSON.put(new JSONObject("{\"date\": \"" + tuple._1() + "\", \"views\": \"" + tuple._2() + "\"}"));
         });
 
         for (Tuple2 tuple : viewsNewData) {
             totalViewNewData += (Integer) tuple._2();
-            viewsListJSON.add("{\"date\": \"" + tuple._1() + "\", \"views\": \"" + tuple._2() + "\"}");
+            viewsListJSON.put(new JSONObject("{\"date\": \"" + tuple._1() + "\", \"views\": \"" + tuple._2() + "\"}"));
         }
 
         JSONObject results = new JSONObject();
         results.put("totalViews", totalViews + totalViewNewData);
         results.put("views", viewsListJSON);
-        obj.put("results", results);
+        obj.put("response", results);
 
         MyKafkaProducer.getProducer().send(new ProducerRecord<>(TOPIC_RESULTS, null, obj.toString()));
     }

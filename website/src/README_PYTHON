@@ -1,0 +1,18 @@
+# Fill up the database
+# On a specific day
+python3 analyze.py 2019-01-01
+
+# On an interval of days (1 request per second)
+python3 analyze.py 2018-01-01 2018-12-31
+
+
+# request views information about an article on a time period (maximum 1 request to the API)
+python3 request.py 0 2019-01-01 2019-01-10 'Aquaman_(film)'
+python3 request.py 0 2015-10-01 2015-10-31 'Albert_Einstein'
+
+
+# request TOP articles on a period of times (no requests to API, only manage data present in db)
+# TOP 500 for year 2018
+python3 request.py 1 2018-01-01 2018-12-31 500
+# TOP 5 for January 1st 2019
+python3 request.py 1 2019-01-01 2019-01-01 5
