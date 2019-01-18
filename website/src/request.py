@@ -22,7 +22,7 @@ def main(argv):
     if int(argv[1]) == 2:
         request = {"todo": "todo"}
     data = json.dumps({"request": request}).encode()
-    print(data)
+    # print(data)
 
     consumer = KafkaConsumer(TOPIC_RESULTS, bootstrap_servers=kafka_servers)
     producer = KafkaProducer(bootstrap_servers=kafka_servers)
@@ -30,10 +30,10 @@ def main(argv):
     producer.send(TOPIC_QUERIES, data)
     for message in consumer:
         msg = json.loads(message.value.decode())
-        print(msg['request'],request)
-        print(msg['request'] == request)
-        if 'results' in msg and msg['request'] == request:
-            print(msg['results'])
+        # print(msg['request'],request)
+        # print(msg['request'] == request)
+        if msg['request'] == request:
+            print(msg['response'])
             break
 
 if __name__ == "__main__":
