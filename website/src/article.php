@@ -6,21 +6,34 @@
 * Do not forget to encode with json_encode($data, JSON_NUMERIC_CHECK);
 */
 function getData($name, $startDate, $endDate){
-    //TODO getData
-    /*$data =  array(
-	array("date" => "1996-12-13", "val" => 71),
-	array("date" => "1996-12-14", "val" => 55),
-	array("date" => "1996-12-15", "val" => 50),
-	array("date" => "1996-12-16", "val" => 65),
-	array("date" => "1996-12-17", "val" => 95),
-	array("date" => "1996-12-18", "val" => 68),
-	array("date" => "1996-12-19", "val" => 28),
-	array("date" => "1996-12-20", "val" => 34),
-	array("date" => "1996-12-21", "val" => 14),
-    );
-    return json_encode($data, JSON_NUMERIC_CHECK);*/
-    echo "python3 request.py " . escapeshellarg($startDate) . " " . escapeshellarg($endDate) . " " . escapeshellarg($name);
-    echo shell_exec("python3 request.py 0 " . $startDate . " " . $endDate . " " . escapeshellarg($name));
+
+    $jsonData =  shell_exec("python3 request.py 0 " . escapeshellarg($startDate) . " " . escapeshellarg($endDate) . " " . escapeshellarg($name));
+    //$jsonData = "{'totalViews': 1256686, 'views': [{'date': '2019-01-09', 'views': '99596'}, {'date': '2019-01-02', 'views': '148810'},{'date': '2019-01-01', 'views': '140019'},  {'date': '2019-01-03', 'views': '127657'}, {'date': '2019-01-04', 'views': '120240'}, {'date': '2019-01-05', 'views': '133910'}, {'date': '2019-01-06', 'views': '159027'}, {'date': '2019-01-07', 'views': '133245'}, {'date': '2019-01-08', 'views': '105322'},  {'date': '2019-01-10', 'views': '88860'}]}";
+    $data = formatData($jsonData);
+    return json_encode($data, JSON_NUMERIC_CHECK);
+
+}
+
+function compareDates($a, $b) {
+    $a = intval(str_replace("-","",$a));
+    $b = intval(str_replace("-","",$b));
+    return ($a == $b ? 0 : ($a < $b ? -1 : 1));
+
+}
+
+function formatData($json){
+    $json = str_replace("'", '"', $json);
+    $json = str_replace("views", 'val', $json);
+    $data = json_decode($json);
+    $data = $data->val;
+    $dates = array();
+    foreach ($data as $key => $row)
+    {
+        array_push($dates, $row->date);
+    }
+    array_multisort($dates, SORT_ASC, $data);
+
+    return $data;
 }
 
 function displayGraph($data){
@@ -70,22 +83,6 @@ function isDateValid($date){
     $pattern = "/[1-9][0-9]{3}-(0[1-9]|1[0-2])-([012][1-9]|3[01])/";
     //return preg_match($pattern, $date);
     return true;
-}
-
-/**
-*  Compare 2 dates
-*  return -1 if date1<date2, 0 if equal and 1 if date1>date2
-*/
-function compareDates($date1, $date2){
-    $date1 = explode("-", $date1);
-    $date2 = explode("-", $date2);
-    for( $i=0; $i<3;$i++){
-        if($date1[$i]>$date2[$i])
-            return 1;
-        if($date1[$i]<$date2[$i])
-            return -1;
-    }
-    return 0;
 }
 
 echo  <<<EOF
