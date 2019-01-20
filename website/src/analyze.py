@@ -17,6 +17,7 @@ from kafka import KafkaProducer
 # Example call of the API
 #          https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/2015/07/01
 API_URL = "https://wikimedia.org/api/rest_v1/metrics/pageviews/top/en.wikipedia/all-access/{}"
+kafka_servers = ['kafka-0.kafka-svc:9093', 'kafka-1.kafka-svc:9093', 'kafka-2.kafka-svc:9093']
 
 def download_and_publish(str_date_begin, str_date_end=None):
     #date = datetime.date.today() - datetime.timedelta(1)
@@ -29,7 +30,7 @@ def download_and_publish(str_date_begin, str_date_end=None):
         date = str2date(str_date_end)
 
     # TODO: use correct kafka server
-    producer = KafkaProducer(bootstrap_servers="kafka-0.kafka-svc:9093")
+    producer = KafkaProducer(bootstrap_servers=kafka_servers)
 
     while date >= start_date:
         str_day = date2str(date)

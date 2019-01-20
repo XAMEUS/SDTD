@@ -2,7 +2,7 @@ import json
 import sys
 from kafka import KafkaConsumer,KafkaProducer
 
-kafka_servers = ['kafka-0.kafka-svc:9093']
+kafka_servers = ['kafka-0.kafka-svc:9093', 'kafka-1.kafka-svc:9093', 'kafka-2.kafka-svc:9093']
 TOPIC_QUERIES = "requests"
 TOPIC_RESULTS = "responses"
 
