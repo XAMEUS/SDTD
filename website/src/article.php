@@ -18,7 +18,6 @@ function compareDates($a, $b) {
     $a = intval(str_replace("-","",$a));
     $b = intval(str_replace("-","",$b));
     return ($a == $b ? 0 : ($a < $b ? -1 : 1));
-
 }
 
 function formatData($json){

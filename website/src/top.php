@@ -2,16 +2,20 @@
 /**
 * call the python script and and format the output to return a 2D array like this
 * [[article1, nbviews], [article2, nb views],...] sorted by rank
-*
+* Return null if script doesn't return expected Json
 */
-function getData($analyzeDate){
-    //TODO Call python to get data about the top articles of the given date
-    // $command = escapeshellcmd("python3 analyze.py $analyzeDate");
-    // $output = shell_exec($command);
-    return [
-        ["Topic1", 9520525],
-        ["Topic2", 5415648],
-        ["Topic3", 2654666]];
+function getData($beginDate, $endDate, $nbTops){
+
+    $JSON =  shell_exec("python3 request.py 1 " . escapeshellarg($startDate) . " " . escapeshellarg($endDate) . " " . escapeshellarg($nbTops));
+    //$JSON = "[{'rank': 1, 'article': 'Main_Page', 'views': 35410749}, {'rank': 2, 'article': 'Special:Search', 'views': 3584221}, {'rank': 3, 'article': 'Special:CreateAccount', 'views': 691997}, {'rank': 4, 'article': 'XHamster', 'views': 540782}, {'rank': 5, 'article': 'Special:RecentChangesLinked/Markem-Imaje', 'views': 534655}]";
+
+    $JSON = str_replace("'", '"', $JSON);
+    $JSON = json_decode($JSON);
+    $formatedData = array();
+    foreach ($JSON as  $article) {
+        array_push($formatedData, [$article->article,$article->views]);
+    }
+    return $formatedData;
 }
 
 /**
@@ -55,6 +59,12 @@ function isDateValid($date){
     return preg_match($pattern, $date);
 }
 
+function compareDates($a, $b) {
+    $a = intval(str_replace("-","",$a));
+    $b = intval(str_replace("-","",$b));
+    return ($a == $b ? 0 : ($a < $b ? -1 : 1));
+}
+
 
 echo  <<<EOF
 <!DOCTYPE html>
@@ -70,19 +80,34 @@ echo  <<<EOF
     <div class="container">
 EOF;
 
-
-if(!(isset($_POST["date"]) && !empty($_POST["date"] && isDateValid($_POST["date"])))) {
-    echo "<h1>Error</h1> Please specify a valid date <a href='index.html'>Back to home</a></body></html>";
+if(!(isset($_POST["beginDateTop"]) && !empty($_POST["beginDateTop"]) && isDateValid($_POST["beginDateTop"]))) {
+    echo "Please specify a valid starting date <a href='index.html'>Back to home</a></body></html>";
     return;
 }
 
-$date = $_POST["date"];
-echo "<h1 class='display-4 text-center'>Top articles of $date</h1>";
+if(!(isset($_POST["endDateTop"]) && !empty($_POST["endDateTop"]) && isDateValid($_POST["endDateTop"]))) {
+    echo "Please specify a valid ending date <a href='index.html'>Back to home</a></body></html>";
+    return;
+}
 
-$data = getData($date);
+if(compareDates($_POST["beginDateTop"], $_POST["endDateTop"]) != -1){
+    echo "The begging date have to be before the ending date.<a href='index.html'>Back to home</a></body></html>";
+    return;
+}
+
+if(!(isset($_POST["nbTops"]) && !empty($_POST["nbTops"]) &&     ($_POST["nbTops"]>=1&&$_POST["nbTops"]<=50))){
+    echo "Please enter a valid number of top (between 1 and 100).<a href='index.html'>Back to home</a></body></html>";
+    return;
+}
+
+echo "<h1 class='display-4 text-center'>Top ".htmlspecialchars($_POST["nbTops"])." articles between " . htmlspecialchars($_POST["beginDateTop"]) ." and " .htmlspecialchars($_POST["endDateTop"])."</h1>";
+
+
+
+$data = getData($_POST["beginDateTop"],$_POST["endDateTop"],$_POST["nbTops"]);
 
 if($data == null) {
-    echo "Error: No data retrieved";
+    echo "Error: No data retrieved</div></body></html>";
     return;
 }
 
