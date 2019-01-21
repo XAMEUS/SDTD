@@ -15,8 +15,8 @@
           --name spark-kafka-mongo \
           --class SimpleApp \
           --conf spark.executor.instances=2 \
-          --driver-memory=1g \
-          --executor-memory=1g \
+          --driver-memory=5g \
+          --executor-memory=5g \
           --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
           --conf spark.kubernetes.container.image=docker.io/theipple/spark \
           https://s3.eu-west-3.amazonaws.com/sdtdk8s/simple-project-1.0-jar-with-dependencies.jar </dev/null >/dev/null 2>&1 &"

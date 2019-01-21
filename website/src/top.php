@@ -9,7 +9,6 @@ function getData($beginDate, $endDate, $nbTops){
     $JSON =  shell_exec("python3 request.py 1 " . escapeshellarg($startDate) . " " . escapeshellarg($endDate) . " " . escapeshellarg($nbTops));
     //$JSON = "[{'rank': 1, 'article': 'Main_Page', 'views': 35410749}, {'rank': 2, 'article': 'Special:Search', 'views': 3584221}, {'rank': 3, 'article': 'Special:CreateAccount', 'views': 691997}, {'rank': 4, 'article': 'XHamster', 'views': 540782}, {'rank': 5, 'article': 'Special:RecentChangesLinked/Markem-Imaje', 'views': 534655}]";
 
-    $JSON = str_replace("'", '"', $JSON);
     $JSON = json_decode($JSON);
     $formatedData = array();
     foreach ($JSON as  $article) {
@@ -96,8 +95,8 @@ if(compareDates($_POST["beginDateTop"], $_POST["endDateTop"]) != -1){
     return;
 }
 
-if(!(isset($_POST["nbTops"]) && !empty($_POST["nbTops"]) &&     ($_POST["nbTops"]>=1&&$_POST["nbTops"]<=50))){
-    echo "Please enter a valid number of top (between 1 and 100).<a href='index.html'>Back to home</a></body></html>";
+if(!(isset($_POST["nbTops"]) && !empty($_POST["nbTops"]) &&     ($_POST["nbTops"]>=1&&$_POST["nbTops"]<=1000))){
+    echo "Please enter a valid number of top (between 1 and 1000).<a href='index.html'>Back to home</a></body></html>";
     return;
 }
 

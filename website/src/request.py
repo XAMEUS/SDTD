@@ -30,10 +30,8 @@ def main(argv):
     producer.send(TOPIC_QUERIES, data)
     for message in consumer:
         msg = json.loads(message.value.decode())
-        # print(msg['request'],request)
-        # print(msg['request'] == request)
         if msg['request'] == request:
-            print(msg['response'])
+            print(json.dumps(msg['response']))
             break
 
 if __name__ == "__main__":

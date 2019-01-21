@@ -2,15 +2,19 @@
 mvn compile assembly:single
 
 
-# The jar needs to be accessible to every node executing the job -> using S3
+# The jar needs to be accessible to every node executing the job -> using S33
+
 JAR_FILE=target/simple-project-1.0-jar-with-dependencies.jar
 S3_BUCKET=s3://sdtdk8s
 aws s3 cp --acl=public-read $JAR_FILE $S3_BUCKET
+
+
 
 # Note: The build & push to the S3 bucket can be done with the script `build_push_s3.sh`
 
 
 # You can execute the spark application on the kubernetes cluster with the following command
+
 KUBERNETES_IP=$(kubectl cluster-info | grep master | grep -o 'http.*:[0-9]*')
 spark-2.4.0-bin-hadoop2.7/bin/spark-submit \
     --master k8s://${KUBERNETES_IP} \
@@ -18,8 +22,8 @@ spark-2.4.0-bin-hadoop2.7/bin/spark-submit \
     --name spark-kafka-mongo \
     --class SimpleApp \
     --conf spark.executor.instances=2 \
-    --driver-memory=1g \
-    --executor-memory=1g \
+    --driver-memory=5g \
+    --executor-memory=5g \
     --conf spark.kubernetes.authenticate.driver.serviceAccountName=spark \
     --conf spark.kubernetes.container.image=docker.io/theipple/spark \
     https://s3.eu-west-3.amazonaws.com/sdtdk8s/simple-project-1.0-jar-with-dependencies.jar
@@ -47,25 +51,26 @@ root@kafka-0:/# kafka-console-producer.sh --topic requests --broker-list localho
 # Check queued messages on a topic
 kafka-run-class.sh  kafka.tools.GetOffsetShell --broker-list localhost:9093,kafka-1.kafka-svc:9093,kafka-2.kafka-svc:9093 --topic topicA
 
-# List the messages present in the kafka topic responses
+# consume
 kafka-console-consumer.sh \
     --bootstrap-server localhost:9093,kafka-1.kafka-svc:9093,kafka-2.kafka-svc:9093 \
-    --topic responses \
+    --topic articles \
     --from-beginning
 
 
 
 
-# Example of queries supported by the application
+# Try the application
+# Add a request
+echo '{"article":"Albert_Einstein", "from":"2015-10-01", "to":"2015-10-31"}' | kafka-console-producer.sh --topic requests --broker-list localhost:9093
+
+# Read the response
+kafka-run-class.sh  kafka.tools.GetOffsetShell --broker-list localhost:9093,kafka-1.kafka-svc:9093,kafka-2.kafka-svc:9093 --topic responses
+
+
 
 # Info article:
-# missing data will be retreived from the API
-{"request":{"type": "infos", "article":"Albert_Einstein", "from":"2015-10-01", "to":"2015-10-31"}}
+{"request": {"type": "infos", "article":"Albert_Einstein", "from":"2015-10-01", "to":"2015-10-31"}}
 
 # Top articles:
-# Will only use data present on database, no API calls done with this query
-{"request":{"type": "tops", "from":"2016-01-01", "to":"2016-02-01", "top_size": 500}}
-{"request":{"type": "tops", "from":"2015-10-01", "to":"2015-10-31", "top_size": 500}}
-{"request":{"type": "tops", "from":"2018-12-01", "to":"2018-12-31", "top_size": 500}}
-
-# python3 analyse.py 2018-01-01 2018-12-31
+{"type": "tops", "from":"2016-01-01", "to":"2016-02-01", "top_size": 500}
