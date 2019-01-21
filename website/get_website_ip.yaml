@@ -1,8 +1,0 @@
----
-- hosts: k8s_master
-  gather_facts: no
-  tasks:
-    - name: Get IP
-      command: sh -c "kubectl describe pods web-server | grep -Po '(?<=IP:.{17}).*'"
-      register: ip
-    - debug: var=ip.stdout

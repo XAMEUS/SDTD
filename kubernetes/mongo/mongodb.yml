@@ -2,11 +2,27 @@
 - hosts: k8s_master
   gather_facts: no
   tasks:
+    - name: Copy mongo pv
+      copy:
+          src: ./mongo-pv.yaml
+          dest: /tmp/mongo-pv.yaml
+          owner: ubuntu
+          group: ubuntu
+          mode: u=rw,g=r,o=r
+
     - name: Create mongodb persistent volume
-      command: kubectl apply -f https://s3.eu-west-3.amazonaws.com/sdtdk8s/mongo/mongo-pv.yaml
+      command: kubectl apply -f /tmp/mongo-pv.yaml
+
+    - name: Copy mongo deployment
+      copy:
+          src: ./mongo-deploy.yaml
+          dest: /tmp/mongo-deploy.yaml
+          owner: ubuntu
+          group: ubuntu
+          mode: u=rw,g=r,o=r
 
     - name: Create mongodb cluster
-      command: kubectl apply -f https://s3.eu-west-3.amazonaws.com/sdtdk8s/mongo/deployment.yaml
+      command: kubectl apply -f /tmp/mongo-deploy.yaml
 
     - name: Get Wanted pods
       command: sh -c "kubectl describe statefulset mongo | grep -Po '(?<=desired.{3})(.*)(?= total)'"
