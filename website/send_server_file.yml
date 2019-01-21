@@ -10,5 +10,8 @@
           group: ubuntu
           mode: u=rw,g=r,o=r
 
+    - name: Remove default website on the pod
+      command: kubectl exec web-server -- rm -rf /var/www/html
+
     - name: Copy web-server file to pod
-      command: kubectl cp /tmp/src/ web-server:/var/www/html
+      command: kubectl cp /tmp/src web-server:/var/www/html
