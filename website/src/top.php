@@ -55,8 +55,9 @@ EOF;
 }
 
 function isDateValid($date){
-    $pattern = "/[1-9][0-9]{3}-(0[1-9]|1[0-2])-([012][1-9]|3[01])/";
-    return preg_match($pattern, $date);
+    /*$pattern = "/[1-9][0-9]{3}-(0[1-9]|1[0-2])-([012][1-9]|3[01])/";
+    return preg_match($pattern, $date);*/
+    return true;
 }
 
 function compareDates($a, $b) {
