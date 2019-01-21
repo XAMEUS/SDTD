@@ -32,6 +32,8 @@ def download_and_publish(str_date_begin, str_date_end=None):
     # TODO: use correct kafka server
     producer = KafkaProducer(bootstrap_servers=kafka_servers)
 
+    nb_requests = 0
+
     while date >= start_date:
         str_day = date2str(date)
         try:
@@ -48,7 +50,11 @@ def download_and_publish(str_date_begin, str_date_end=None):
             print("Unable to load data for day: {}".format(str_day))
             print(e)
 
-        time.sleep(1)
+        nb_requests += 1
+        if nb_requests == 100:
+            nb_requests = 0
+            time.sleep(2)
+
         date -= datetime.timedelta(1) # 1 day
         # break
 
